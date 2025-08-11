@@ -46,5 +46,9 @@ def cert4():
 def cert5():
     return render_template('cert5.html') 
 
+@app.route('/cert6')
+def cert6():
+    return render_template('cert6.html') 
+
 if __name__ == '__main__':
     app.run(debug=True)
