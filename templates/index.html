@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="slideshow-container">
+        <!-- Slide 1 -->
+        <div class="mySlides is-current">
+            <img src="/static/image/cover_section/slide7.jpg" class="slide-img first-slide">
+            <div class="caption-text">
+                <h1>Hi, I'm Dario!</h1>
+            </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="mySlides">
+            <img src="/static/image/cover_section/slide5.jpg" class="slide-img">
+            <div class="caption-text">
+                <h1>Welcome to my <br> Data Science house</h1>
+            </div>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="mySlides">
+            <img src="/static/image/cover_section/slide8.jpg" class="slide-img">
+            <div class="caption-text">
+                <h1>You can find my work, thoughts, and ideas here</h1>
+            </div>
+        </div>
+    </div>
+    <!-- Arrows -->
+    <a class="prev" onclick="plusSlides(-1)">❮</a>
+    <a class="next" onclick="plusSlides(1)">❯</a>
+</div>
+
+<!-- 🔘 Dot indicators -->
+<div class="dot-container">
+    <span class="dot" onclick="currentSlide(1)"></span>
+    <span class="dot" onclick="currentSlide(2)"></span>
+    <span class="dot" onclick="currentSlide(3)"></span>
+</div>
+<!-- 📌 Projects Section -->
+<section class="projects-section fade-in-up" id="projects">
+    <h2 class="section-title">Some Things I've Interested In</h2>
+    <div class="underline"></div>
+</section>
+
+<!-- 📌 Projects Wildcards -->
+<div class="projects-grid">
+    <div class="project-card">
+        <img src="/static/image/project_section/project1.jpg" alt="Project 1">
+        <h3><a href="{{ url_for('taxi_ride') }}" class="project-link">Chicago Taxi MLOPS</a></h3>
+        <p>The end-to-end ML pipeline & workflow to predict the ride duration of Chicago Taxi Dataset.</p>
+    </div>
+    <div class="project-card">
+        <img src="/static/image/project_section/project2.jpg" alt="Project 2">
+        <h3><a href="{{ url_for('student_retention') }}" class="project-link">Student Retention In Higher Education</a></h3>
+        <p>Classifies students dropping out of the course using a statistical model.</p>
+    </div>
+    <div class="project-card">
+        <img src="/static/image/project_section/project3.jpg" alt="Project 3">
+        <h3>Healthcare Prediction Users App</h3>
+        <p>The User Interface for health prediction using Streamlit.</p>
+    </div>
+    <div class="project-card">
+        <img src="/static/image/project_section/project4.jpg" alt="Project 4">
+        <h3><a href="{{ url_for('geospatial_crash') }}" class="project-link">Geospatial Crash Modelling</a></h3>
+        <p>A Geospatial Data Science modelling the car crash</p>
+    </div>
+    <div class="project-card">
+        <img src="/static/image/project_section/project5.jpg" alt="Project 5">
+        <h3><a href="{{ url_for('million_songs') }}" class="project-link">Million Songs - PySpark</a></h3>
+        <p>Applying Machine Learning for genre classification and audio recommendation.</p>
+    </div>
+    <div class="project-card">
+        <img src="/static/image/project_section/project6.jpg" alt="Project 6">
+        <h3><a href="{{ url_for('precipitation_project') }}" class="project-link">Precipitation Analysis</a></h3>
+        <p>Processing, analyzing, and predicting precipitation data across the globe.</p>
+    </div>      
+</div>
+
+<!-- 📌 About Me Section -->
+<section class="about-section fade-in-up" id="about">
+    <h2 class="section-title">About Me</h2>
+    <div class="underline"></div>
+
+    <div class="about-content">
+        <div class="about-image">
+            <img src="/static/image/about_section/profile.jpg" alt="Dario Profile">
+        </div>
+        <div class="about-text">
+            <p style = "text-align:justify;">
+                Hi, I’m <strong>Dario</strong> — a passionate and detail-oriented Data Analyst and aspiring Data Scientist. With a strong background in machine 
+                learning, statistics, and data visualization, I enjoy transforming data into actionable insights and building end-to-end analytical solutions.
+            </p>
+            <p style = "text-align:justify;">
+                From predictive modeling to geospatial analysis, I love solving real-world problems with data. I’m always exploring 
+                new tools, algorithms, and challenges in the world of analytics and AI.
+            </p>
+            <p style = "text-align:justify;">
+                Currently, I’m enhancing my portfolio through impactful personal projects, and I’m open to exciting opportunities where I can grow and contribute 
+                meaningfully.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- 📌 Certificates Section -->
+<section class="certificates-section" id="certificates">
+    <div class="fade-in-up">
+        <h2 class="section-title">Courses & Certificates</h2>
+        <div class="underline"></div>
+    </div>
+    <div class="carousel-wrapper">
+        <div class="carousel-track">
+            <!-- 8 Wildcards -->
+            <div class="certificate-card">
+                <a href="{{ url_for('cert1') }}">
+                    <img src="/static/image/certificate_section/cert1.jpg" alt="Certificate 1">
+                    <p>Master of Applied Data Science</p>
+                </a>
+            </div>
+            <div class="certificate-card">
+                <a href="{{ url_for('cert2') }}">
+                    <img src="/static/image/certificate_section/cert2.jpg" alt="Certificate 2">
+                    <p>Machine Learning for Data Analytic</p>
+                </a>
+            </div>
+            <div class="certificate-card">
+                <a href="{{ url_for('cert3') }}">
+                    <img src="/static/image/certificate_section/cert3.jpg" alt="Certificate 3">
+                    <p>Python for Data Analytic</p>
+                </a>
+            </div>
+            <div class="certificate-card">
+                <a href="{{ url_for('cert4') }}">
+                    <img src="/static/image/certificate_section/cert4.jpg" alt="Certificate 4">
+                    <p>SQL for Data Analytic</p>
+                </a>
+            </div>
+            <div class="certificate-card">
+                <a href="{{ url_for('cert5') }}">
+                    <img src="/static/image/certificate_section/cert5.jpg" alt="Certificate 5">
+                    <p>Feature Manipulate Engineer (FME)</p>
+                </a>
+            </div>
+            <div class="certificate-card">
+                <img src="/static/image/certificate_section/Data Manipulation In SQL.jpg" alt="Certificate 6">
+                <p>Data Manipulation in SQL- Datacamp</p>
+            </div>
+            <div class="certificate-card">
+                <img src="/static/image/certificate_section/Intermediate Python.jpg" alt="Certificate 7">
+                <p>Advanced Python - Datacamp</p>
+            </div>
+            <div class="certificate-card">
+                <img src="/static/image/certificate_section/cert8.jpg" alt="Certificate 8">
+                <p>Excel to MySQL</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- 📌 Extracurricular Activities Section -->
+<section class="activities-section" id="activities">
+    <h2 class="section-title">Extracurricular Activities</h2>
+    <div class="underline"></div>
+
+    <!-- Activity 1: Image Left, Text Right -->
+    <div class="activity-card">
+        <div class="activity-image">
+            <img src="/static/image/activities_section/act1.jpg" alt="Basketball Captain">
+        </div>
+        <div class="activity-text">
+            <h3>University Basketball Player (Captain)</h3>
+            <p style = "text-align:justify;">
+                These were some of the most memorable days of my university life at International University as a captain of a basketball team.
+                I had the opportunity to collaborate with incredible teammates, contribute to meaningful activities, and grow every single day.
+                Through these experiences, I developed key skills such as teamwork, mentoring, leadership, and problem-solving, all of which have shaped my personal and professional journey.
+            </p>
+        </div>
+    </div>
+
+    <!-- Activity 2: Text Left, Image Right -->
+    <div class="activity-card reverse">
+        <div class="activity-image">
+            <img src="/static/image/activities_section/act2.jpg" alt="Basketball Founder">
+        </div>
+        <div class="activity-text">
+            <h3>Co-Founder University Basketball Club</h3>
+            <p style = "text-align:justify;">
+                As a Co-Founder of the University Basketball Club, I was responsible for building the team from the ground up—creating proposals, 
+                organizing tournaments, and leading key departments including operations, media, and training. This experience enhanced my leadership, 
+                project management, communication, and strategic planning skills while fostering teamwork and a strong club culture.
+            </p>
+        </div>
+    </div>
+
+    <!-- Activity 3: Image Right, Text Left -->
+    <div class="activity-card">
+        <div class="activity-image">
+            <img src="/static/image/activities_section/act3.jpg" alt="3x3 Basketball">
+        </div>
+        <div class="activity-text">
+            <h3>Basketball 3x3 Leagues Event</h3>
+            <p style = "text-align:justify;">
+                As the Event Leader of the University 3x3 Basketball League, I successfully coordinated and managed the entire tournament — 
+                from planning the event structure and scheduling games to overseeing logistics and team registrations. 
+                This role strengthened my skills in event management, communication, and stakeholder coordination, 
+                while promoting sportsmanship and student engagement on campus.
+            </p>
+        </div>
+    </div>
+</section>
+<script>
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('show');
+            } else {
+                entry.target.classList.remove('show'); // 👈 Remove class when out of view
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+    const activityCards = document.querySelectorAll('.activity-card');
+    activityCards.forEach(card => observer.observe(card));
+</script>
+{% endblock %}

@@ -1,0 +1,417 @@
+/* Precipiration  Section */
+.project-detail-section {
+    max-width: 900px;
+    margin: 60px auto;
+    padding: 0 20px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.project-detail-section ul {
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.project-detail-section h2 {
+    margin-top: 30px;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.project-link {
+    color: inherit;             /* Use the default text color */
+    text-decoration: none;     /* Remove underline */
+    font-weight: bold;         /* Optional: keep it bold */
+}
+
+.project-link:hover {
+    text-decoration: underline; /* Optional: underline on hover */
+    color: inherit;             /* Prevent hover color change */
+}
+
+/* Author Section */
+.author-info {
+    text-align: right;
+    font-size: 0.95em;
+    color: #555;
+    margin-bottom: 20px;
+  }
+
+/* Background Section */
+.body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    max-width: 900px;
+    margin: 80px auto 0; /* top padding for fixed navbar */
+    padding: 40px 20px;
+
+    /* Background image setup */
+    background-image: url('/static/image/precipitation_project/background.jpg');
+    background-size: cover;          /* Make it cover the entire area */
+    background-position: center;     /* Center the image */
+    background-attachment: fixed;    /* Optional: parallax effect */
+
+    position: relative;              /* Needed for overlay positioning */
+}
+
+/* Transparent overlay */
+.body::before {
+    content: "";
+    position: fixed;      /* Stays in place while scrolling */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255,255,255,0.7); /* White overlay, 70% opacity */
+    z-index: -1;          /* Keep it behind the text */
+}
+
+/* Transparent navbar only for pages with class="body" */
+.body .topnav {
+    background: transparent;
+    backdrop-filter: blur(6px);           /* frosted glass effect */
+    border-bottom: 1px solid rgba(200, 200, 200, 0.5);
+}
+
+/*  Table Section */
+.table-container {
+    overflow-x: auto;
+    margin: 24px 0 40px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(4px);
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* Table basics */
+.styled-table {
+    width: 100%;
+    border-collapse: separate;      /* allows rounded corners without clipping */
+    border-spacing: 0;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.96rem;
+    color: #1f2d3d;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Header */
+.styled-table thead tr {
+    background-color: #0b3d57;      /* richer teal */
+    color: #ffffff;
+}
+.styled-table th {
+    text-align: center;
+    padding: 12px 14px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    border-right: 1px solid rgba(255,255,255,.25);  /* vertical line in header */
+}
+
+.styled-table th:last-child {
+    border-right: none;              /* no line after last column */
+}
+
+/* Cells */
+.styled-table td {
+    padding: 12px 14px;
+    vertical-align: top;
+    line-height: 1.5;
+    border-right: 1px solid #e6eef3;  /* vertical line in body */
+}
+
+.styled-table td:last-child {
+    border-right: none;               /* no line after last column */
+}
+
+/* Row separators instead of full borders */
+.styled-table tbody tr + tr td {
+    border-top: 1px solid #e6eef3;
+}
+
+/* Zebra striping (subtle) */
+.styled-table tbody tr:nth-child(even) td {
+    background-color: #f6fbfe;
+}
+
+/* Hover (very gentle) */
+.styled-table tbody tr:hover td {
+    background-color: #eef7fb;
+}
+
+/* Emphasis rules keep working */
+.styled-table em { font-style: italic; }
+.styled-table strong { font-weight: 700; }
+
+/* Left column: give it breathing room and weight */
+.styled-table tbody td:first-child {
+    width: 28%;
+    font-weight: 700;
+    color: #1a3340;
+}
+
+/* Section row (full-width color) */
+.styled-table tbody tr.section-row td {
+    background: #0b3d57;
+    color: #fff;
+    font-weight: 700;
+    text-align: center;
+    border-right: none;   /* no vertical lines through the band */
+    border-top: none;     /* no horizontal line on top of the band */
+}
+
+/* Numeric column alignment */
+.styled-table td.num { text-align: center; }
+
+/* Caption (title) above table */
+.table-title {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+/* Source note under table */
+.table-source {
+    text-align: center;
+    font-style: italic;
+    margin-top: 10px;
+    color: #334e5a;
+}
+
+/* Custom style for Model Performance Comparison table */
+.model-performance-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.96rem;
+}
+
+.model-performance-table th,
+.model-performance-table td {
+    padding: 12px 14px;
+    text-align: center;
+    border-right: 1px solid #e6eef3;
+}
+
+.model-performance-table th:last-child,
+.model-performance-table td:last-child {
+    border-right: none;
+}
+
+.model-performance-table tbody tr + tr td {
+    border-top: 1px solid #e6eef3;
+}
+
+.model-performance-table tbody tr.model-separator td {
+    border-top: 3px solid #0b3d57;  /* thicker dark teal line */
+}
+
+
+.model-performance-table tbody tr:nth-child(even):not(.model-separator) td {
+    background-color: #f6fbfe;
+}
+
+.model-performance-table tbody tr:hover td {
+    background-color: #eef7fb;
+}
+
+/* Haversine Section */
+.haversine-section {
+    background: rgba(255, 255, 255, 0.85); /* light overlay to protect from background images */
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    max-width: 950px;
+    margin: 40px auto;
+}
+
+
+.haversine-section .haversine-flex {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+}
+
+
+.haversine-section .haversine-img img {
+    width: 300px;
+    border-radius: 10px;
+    background: white; /* ensure clean image background */
+    padding: 5px;
+}
+
+
+.haversine-section .formula-box {
+    border: 1px solid black;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background: #fff; /* ensure formula readability */
+    border-radius: 8px;
+}
+
+
+.haversine-section .caption {
+    text-align: center;
+    margin-top: 10px;
+    font-style: italic;
+    color: #444;
+}
+
+
+/* Table 8 Custom CSS */
+.distance-card {
+    max-width: 980px;
+    margin: 24px auto;
+    padding: 14px;
+    background: #ffffff;               
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    overflow-x: auto;
+}
+  
+  /* Table */
+.distance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #111;
+    background: #fff;
+    border: 1px solid #333;  /* outer border */
+}
+  
+  /* Caption */
+.distance-table caption {
+    caption-side: top;
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #111;
+  }
+  
+.distance-table thead th {
+    background: #cce6f6;                
+    color: #0b2d3c;
+    border: 1px solid #333;  /* visible header cell borders */
+    padding: 6px 8px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  
+  
+.distance-table td {
+    background: #fff;
+    border: 1px solid #333;  /* visible body cell borders */
+    padding: 6px 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+  
+  
+.distance-table td:last-child {
+    font-weight: 700;
+}
+  
+@media (max-width: 600px) {
+    .distance-table { font-size: 13px; }
+}
+
+/* Image Section */
+.styled-table .section-row td {
+    background: #eaf4fb;   /* light blue bar */
+    font-weight: 700;
+    color: #0b3d57;
+    border-top: 1px solid #d9e7f0; /* subtle divider */
+  }
+  
+.styled-table td.num { text-align: right; }
+
+/* Center numeric columns only */
+.styled-table td:nth-child(2),
+.styled-table td:nth-child(3),
+.styled-table td:nth-child(4) {
+    text-align: center;
+}
+
+.image-card {
+    max-width: 900px;          /* keeps charts from stretching too wide */
+    margin: 28px auto;
+    padding: 16px;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(4px);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+  
+.image-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+  }
+  
+
+.image-card figcaption {
+    text-align: center;
+    font-style: italic;
+    color: #444;
+    margin-top: 10px;
+  }
+
+
+/* Image container for Appendix */
+.image-container {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.image-container .caption {
+    font-style: italic;
+    color: #555;
+    margin-top: 8px;
+}
+
+
+/* Custom wrapper figure 4 */
+.dag-card {
+    max-width: 900px;
+    margin: 28px auto;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  
+/* Stack images inside card */
+.dag-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+  
+.dag-stack img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+}
+  
+/* Gap between images */
+.dag-gap {
+    height: 18px;
+}
+  
+/* Caption inside card */
+.dag-stack figcaption {
+    margin-top: 12px;
+    font-style: italic;
+    color: #444;
+    font-size: 0.95em;
+}

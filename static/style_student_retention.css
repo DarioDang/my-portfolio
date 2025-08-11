@@ -1,0 +1,230 @@
+/* 🔥 Retention  Section */
+.project-detail-section {
+    max-width: 900px;
+    margin: 60px auto;
+    padding: 0 20px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.project-detail-section ul {
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.project-detail-section h2 {
+    margin-top: 30px;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.project-link {
+    color: inherit;             /* Use the default text color */
+    text-decoration: none;     /* Remove underline */
+    font-weight: bold;         /* Optional: keep it bold */
+}
+
+.project-link:hover {
+    text-decoration: underline; /* Optional: underline on hover */
+    color: inherit;             /* Prevent hover color change */
+}
+
+
+/* 🔥 Retention Table Section */
+.table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.95rem;
+}
+
+.styled-table thead tr {
+    background-color: #004466;
+    color: #ffffff;
+    text-align: left;
+}
+
+.styled-table th,
+.styled-table td {
+    padding: 10px 12px;
+    border: 1px solid #dddddd;
+}
+
+.styled-table tbody tr:nth-child(even) {
+    background-color: #f2f9fc;
+}
+
+.styled-table tbody tr:hover {
+    background-color: #e1f3f8;
+}
+
+.styled-table em {
+    font-style: italic;
+}
+
+.styled-table strong {
+    font-weight: bold;
+}
+
+
+/* Header Section */
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-top: 20px;
+}
+
+.logo-left img {
+    max-width: 180px;
+    height: auto;
+}
+
+.header-text {
+    flex: 1;
+    text-align: right;
+    padding-left: 40px;
+    font-size: 1.1rem;
+    color: #0e2c21;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.top-line {
+    width: 100%;
+    border: none;
+    border-top: 1px solid #333;
+    margin-bottom: 10px;
+}
+
+
+/* Title Section */
+.project-title {
+    text-align: center;
+    margin-top: 40px;
+    font-family: 'Segoe UI', sans-serif;
+    color: #0d2b22;
+}
+
+.project-title h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+.project-title h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* Author Section */
+.author-info {
+    text-align: right;
+    font-size: 0.95em;
+    color: #555;
+    margin-bottom: 20px;
+  }
+
+
+
+/* Image Section */
+.image-container {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.image-container .caption {
+    font-style: italic;
+    color: #555;
+    margin-top: 8px;
+}
+
+/* List Custom */
+ul {
+    list-style-type: disc; /* or use '–' with custom styling */
+    margin-left: 20px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+/* Underline for sub title */
+h3 {
+    text-decoration: underline;
+    text-underline-offset: 4px; 
+    color: #1f2d3d;            
+    margin-bottom: 10px;     
+}
+
+/* Make 2 plots parallel */
+.figure-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin: 40px 0;
+}
+
+.figure-item {
+    text-align: center;
+    max-width: 500px;
+    flex: 1;
+}
+
+.figure-img {
+    width: 100%;
+    height: auto;
+    border: none;
+    border-radius: 0;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 0 20px;
+}
+
+/* Custome caption with italic font */
+.caption {
+    font-style: italic;
+    font-size: 1.1rem;
+    min-height: 3em; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+/* Reference Section Customize */
+#references {
+    padding: 40px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.reference-list {
+    list-style-type: decimal;
+    padding-left: 20px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.reference-list a {
+    color: #1a73e8;
+    text-decoration: none;
+}
+
+.reference-list a:hover {
+    text-decoration: underline;
+}

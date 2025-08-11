@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Master of Applied Data Science Certificate</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: center;
+        }
+
+        .certificate-container {
+            background-color: #fff;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .certificate-container img.logo {
+            max-width: 180px;
+            margin-bottom: 25px;
+        }
+
+        .certificate-container img.certificate {
+            width: 100%;
+            max-width: 650px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #ccc;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        p {
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #2c3e50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-button:hover {
+            background-color: #1a252f;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <!-- University Logo -->
+        <img src="{{ url_for('static', filename='image/certificate_section/UC_Logo.png') }}" 
+             alt="Showa University Logo" class="logo">
+
+        <!-- Certificate Image -->
+        <img src="{{ url_for('static', filename='image/certificate_section/Master_Degree.jpg') }}" 
+             alt="Master of Applied Data Science Certificate" class="certificate">
+
+        <!-- Title and Description -->
+        <h1>Master of Applied Data Science</h1>
+        <p style = "text-align:justify ;">
+            This certificate acknowledges the successful completion of the Master of Applied Data Science program.
+            The coursework focused on data analytics, machine learning, data engineering, and statistical modeling.
+        </p>
+        <p style = "text-align:justify ;">
+            Through practical projects, the program emphasized hands-on experience with tools like Python, SQL,
+            and big data frameworks. Graduates are well-equipped for data-driven problem solving in real-world settings.
+        </p>
+
+        <!-- Back Link -->
+        <a href="/#certificates" class="back-button">← Back to Certificates</a>
+    </div>
+</body>
+</html>

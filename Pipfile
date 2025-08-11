@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pip = "==24.0"
+streamlit = "*"
+pandas = "*"
+gunicorn = "*"
+matplotlib = "*"
+requests = "*"
+flask-cors = "*"
+flask = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9.12"

@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Precipitation Data Analysis</title>
+    <link rel="stylesheet" href="/static/style_precipitation_analysis.css">
+     <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 80px auto 0; /* top padding for fixed navbar */
+            padding: 40px 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        section {
+            margin-bottom: 50px;
+        }
+    </style>
+</head>
+<body class = "body">
+    {% include "navigate_bar.html" %}
+    <h1 style="text-align: center;">
+        🌧️ GLOBAL HISTORICAL CLIMATOLOGY NETWORK DAILY <br>
+        (GHCND) ANALYSIS IN SPARK 🌧️
+    </h1>
+    <div class="author-info">
+        <p>
+            <strong>Author:</strong> Dario Dang<br>
+            <strong>Date:</strong> September 15, 2024<br>
+            <a href="https://github.com/DarioDang/ghcn-spark-analysis" target="_blank">Code File</a>
+        </p>
+    </div>
+    <section>
+        <h2>Background</h2>
+        <p style="text-align: justify;">
+            This assignment focuses on analysing the Global Historical Climatology Network (GHCN) daily dataset using Apache Spark. 
+            The GHCN dataset contains global climate observations, making it vital for understanding long-term climate patterns. 
+            The initial task involves understanding the dataset structure and loading it into Spark for efficient processing. 
+            Key data processing steps include inspecting variables and merging relevant metadata to enrich station data. 
+            In the analysis phase, we explore trends in climate variables like temperature and precipitation, calculate distance between 
+            two stations, generate descriptive statistics, and conduct time series analysis to detect seasonal and long-term patterns. 
+            Additionally, we summarize the data by regions and time periods to uncover larger climate trends, with a focus on stations in New Zealand. 
+            Spark's distributed computing capabilities enable efficient handling of large datasets throughout this process.
+        </p>
+        <h2> PART I: PROCESSING </h2>
+        <h3> I. Explore the daily, stations, states, countries, and inventory data in HDFS </h3>
+        <h4> 1. How is the data structure? </h4>
+            <figure class="image-card">
+              <img src="{{ url_for('static', filename='image/precipitation_project/GHCND_Directory_Tree.png') }}"
+              alt="Directory Tree"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+              >
+            <figcaption>Figure 1.  A Directory Tree Map show the structure of GHCND Dataset stored in HDFS.</figcaption>
+            </figure>
+        <p style="text-align: justify;">
+            The GHCND dataset is stored in Hadoop Distributed File System (HDFS) and is organized into a main directory containing daily climate 
+            observation with 263 compressed CSV files. The first year in daily dataset is 1750 following the 13 years gap and until 1763 to 2024. 
+            Alongside the daily data, the directory includes metadata files such as ghcnd-countries.txt, ghcnd-inventory.txt, ghcnd-states.txt, and 
+            ghcnd-stations.txt, which provide essential information about the countries, weather stations, and recorded variables.
+        </p>
+        <h4> 2. How does the size of the data changes?</h4>
+            <figure class="image-card">
+              <img src="{{ url_for('static', filename='image/precipitation_project/Change_HDFS.jpg') }}"
+              alt="Change in HDFS Size"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+              >
+            <figcaption>Figure 2. Logarithmic Growth of Data Size from 1750 to 2024</figcaption>
+            </figure>
+        <p style="text-align: justify;">
+            The chart shows the change in data size from 1750 to 2024. By taking the log we can observed there is the gap between 1750 to 1763 indicate the missing data between those years which hard to see in the original scale. 
+            From 1763 to 1880, the data size grows steadily and gradually. However, starting in 1900s, there is a sharp increase. After 1950, the growth becomes 
+            more stable toward the end of series. 
+        </p>
+        <h4>3. What is the total size of all of the data, and how much of that is daily? </h4>
+        <p style="text-align: justify;">
+            The total size of the GHCND data is 12.5 GB, representing the actual amount of data stored, and 99.8 GB, which includes replication across the HDFS. 
+            The daily data specifically comprises 12.4 GB (actual size) and 99.5 GB (HDFS size). Since each dataset have several different sizes of unit 
+            such as (GB, KB, MB), in order to explore how the size of other datasets compare to daily dataset, we have to convert it into the same consistent unit.
+            According to the table 1, the daily dataset dominates the data volume with 13002342.4 KB, accounting for 99.66% of the total. 
+            In comparison, the inventory dataset, which is 33,996 (KB) represents only 0.26% of the total. The stations dataset has 10,752.0 KB (0.08%), 
+            while the countries and states datasets are minor in size, with 3.6 KB and 1.1 KB, respectively. In conclusion, the daily dataset is vastly larger 
+            than the others combined.
+        </p>
+        <div class="table-container">
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 1. Comparison of GHCND dataset Sizes in HDFS
+              </caption>
+            <thead>
+              <tr>
+                <th style="border: 1px solid black; padding: 8px;">Datasets</th>
+                <th style="border: 1px solid black; padding: 8px;">Actual Size</th>
+                <th style="border: 1px solid black; padding: 8px;">Replicate Size</th>
+                <th style="border: 1px solid black; padding: 8px;">Actual Size in KB</th>
+                <th style="border: 1px solid black; padding: 8px;">Percentage Total (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Daily</td>
+                <td style="border: 1px solid black; padding: 8px;">12.4 GB</td>
+                <td style="border: 1px solid black; padding: 8px;">99.5 GB</td>
+                <td style="border: 1px solid black; padding: 8px;">13002342.4</td>
+                <td style="border: 1px solid black; padding: 8px;">99.656985</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Countries</td>
+                <td style="border: 1px solid black; padding: 8px;">3.6 KB</td>
+                <td style="border: 1px solid black; padding: 8px;">28.6 KB</td>
+                <td style="border: 1px solid black; padding: 8px;">3.6</td>
+                <td style="border: 1px solid black; padding: 8px;">0.000028</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Inventory</td>
+                <td style="border: 1px solid black; padding: 8px;">33.2 MB</td>
+                <td style="border: 1px solid black; padding: 8px;">265.4 MB</td>
+                <td style="border: 1px solid black; padding: 8px;">33996.8</td>
+                <td style="border: 1px solid black; padding: 8px;">0.26057</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">States</td>
+                <td style="border: 1px solid black; padding: 8px;">1.1 KB</td>
+                <td style="border: 1px solid black; padding: 8px;">8.5 KB</td>
+                <td style="border: 1px solid black; padding: 8px;">1.1</td>
+                <td style="border: 1px solid black; padding: 8px;">0.000008</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Stations</td>
+                <td style="border: 1px solid black; padding: 8px;">10.5 MB</td>
+                <td style="border: 1px solid black; padding: 8px;">84.0 MB</td>
+                <td style="border: 1px solid black; padding: 8px;">10752</td>
+                <td style="border: 1px solid black; padding: 8px;">0.082409</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h3> II. Apply the schema to each dataset </h3> 
+        <h4> 1. Define the schema for daily dataset </h4>
+        <p style="text-align: justify;">
+            The schema for the daily dataset follows the format recommended in the README file, with data types selected to match each column's data. StringType 
+            is used for character data, while IntegerType is applied to numeric fields like "Value." The "Date" variable is formatted as StringType due 
+            to null values, and "Observation_Time" is defined as TimestampType to handle the HHMM (hour-minute) format.  The nullable in Station_ID column is 
+            set to be false since we do not expect this field have the null values. 
+        </p>
+        <h4>2. Load 1000 first rows of the 2023 daily dataset </h4>
+        <p style="text-align: justify;">
+            After changing the “DATE” variable into the “StringType” the 1000 rows of 2023 daily dataset had been loaded successfully. 
+            The table contains the final schema for daily dataset are shown below: 
+        </p>
+        <div class="table-container">
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 2. Schema of Daily dataset
+            </caption>  
+            <thead>
+              <tr>
+                <th style="border: 1px solid black; padding: 8px;">Data Type</th>
+                <th style="border: 1px solid black; padding: 8px;">Variable Names</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">String</td>
+                <td style="border: 1px solid black; padding: 8px;">
+                  <strong>Station_ID, DATE, Element, Measurement_Flag, Quality_Flag, Source_Flag</strong>
+                </td>
+              </tr>
+              <tr style="background-color: #b3e0f2;">
+                <td style="border: 1px solid black; padding: 8px;">Integer</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>VALUE</strong></td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Timestamp</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>Observation_Time</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h4>3. Load each stations, states, countries and inventory dataset</h4>
+        <p style="text-align: justify;">
+            Since the GHCND metadata is in a fixed-width format, we use the substring function in the PySpark API to extract specific data from string 
+            columns based on their positions within the fixed-width structure (PySpark 3.1.1 Documentation, n.d.). Additionally, 
+            loading fixed-width files often introduces extra spaces that can cause formatting issues. The trim function is crucial in this context as 
+            it removes any leading or trailing spaces from the extracted strings (pyspark.sql.functions.trim – PySpark 3.5.2 Documentation, n.d.). 
+            Therefore, both substring and trim are essential for parsing and correctly formatting fixed-width text data. After parsing the data and 
+            correctly assigning it to the appropriate columns, each variable was then converted to the correct data type. The table below shows the total 
+            number of rows for each dataset along with the variable names and their respective data types.
+        </p>
+        <div class="table-container">
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 3. Schema of metadata files
+            </caption>  
+            <thead>
+              <tr>
+                <th style="border: 1px solid black; padding: 8px;">Metadata</th>
+                <th style="border: 1px solid black; padding: 8px;">Row Counts</th>
+                <th style="border: 1px solid black; padding: 8px;">Data Type</th>
+                <th style="border: 1px solid black; padding: 8px;">Variable Names</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background-color: #e6f5fc;">
+                <td style="border: 1px solid black; padding: 8px;">States</td>
+                <td style="border: 1px solid black; padding: 8px;">74</td>
+                <td style="border: 1px solid black; padding: 8px;">String</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>State_Name</strong></td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Countries</td>
+                <td style="border: 1px solid black; padding: 8px;">219</td>
+                <td style="border: 1px solid black; padding: 8px;">String</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>code_country, Country_Name</strong></td>
+              </tr>
+              <tr>
+                <td rowspan="2" style="border: 1px solid black; padding: 8px;">Stations</td>
+                <td rowspan="2" style="border: 1px solid black; padding: 8px;">127,994</td>
+                <td style="border: 1px solid black; padding: 8px;">String</td>
+                <td style="border: 1px solid black; padding: 8px;">
+                  <strong>Station_ID, State_Code, Station_Name, GSN_Flag, HCN_CRC_Flag, WMO_ID</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Double</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>Latitude, Longitude, Elevation</strong></td>
+              </tr>
+              <tr>
+                <td rowspan="3" style="border: 1px solid black; padding: 8px;">Inventory</td>
+                <td rowspan="3" style="border: 1px solid black; padding: 8px;">756,342</td>
+                <td style="border: 1px solid black; padding: 8px;">String</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>Station_ID, Element</strong></td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Double</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>Latitude, Longitude</strong></td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Integer</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>First_Year, Last_Year</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h4>4. Checking overlap between stations and inventory</h4>
+        <p style="text-align: justify;">
+            To determine if there are any stations in the inventory table that are not present in the stations table, we use a left anti join with the 
+            station_id as the key. The left anti join selects only the rows from the left table (inventory) that do not have corresponding matches in the 
+            right (stations) table (Nelamali, 2024). After performing this join, the result was counted to identify how many such stations exist. 
+            The count was 0, indicating that all stations inventory table are also present in the stations table. 
+        </p>
+        <h2> PART II: EXPLORE STATIONS METADATA FILE</h2>
+        <h3> Enriching Station </h3>
+        <h4>1. Combining relavant information </h4>
+        <p style="text-align: justify;">
+            To explore the station tables in more detail, the stations data was enriched by joining it with both the countries and states data. First, the 
+            country code was extracted from each station ID using the substring function, and this was stored in a new column named "country code" with the 
+            withColumn method. This new column was used to perform a LEFT JOIN between the stations and countries data. Similarly, the stations data was 
+            joined with the states data using the "State_Code" column for more detailed information. The use of LEFT JOINs ensured that all stations remained 
+            in the dataset, even if corresponding country or state information was missing, allowing for comprehensive analysis without losing any station records. 
+            These joins transformed the station dataset into a more informative one, enriched with geographic metadata valuable for location-based analysis.
+        </p>
+        <h4>2. The first & last year each station active </h4>
+        <p style="text-align: justify;">
+            To determine the first and last years each station was active and collected any element, the analysis began by grouping the inventory data 
+            by “station_id” and using aggregation functions to find the minimum and maximum years each station was active, the resulting then stored 
+            in “station_year” table which provided a clear timeline of when each station was operational.  For further information, the length of time that 
+            each station active calculated by subtracting the First_Year from the Last_Year and adding one year to account for the inclusive range. 
+            In overall, there are 2701 stations were active for only 1 year represent the shortest operational and 64 stations were active for the maximum 
+            period of 275 represent for the longest operational. In average, stations were active for approximately 35 years. 
+        </p>
+        <h4>3. Count of Different, Core, and "Other" Elements Collected by Each Station </h4>
+        <p style="text-align: justify;">
+            According to the “README” file, there are five core elements which is PRCP (Precipitation), SNOW(Snowfall), SNWD (Snow depth), TMAX (maximum temperature), 
+            TMIN (minimum temperature). To count the number of different elements that each station had collected, the method began by defining the core elements 
+            list and using the “withColumn” to create the two new columns which identifies whether an element is a core element (1) or not (0). Next, the data was 
+            aggregated by station_id to calculate the number of unique elements collected by each station using the count distinct and sum function.  Finally, the 
+            result had been joined with the station_year table above to ensure all relevant information is captured and was stored under the “element_counts” dataset. 
+            As a result, there are 2 stations that collect 70 elements, which is considered the highest number of unique elements that any station can collect. 
+            In contrast, there are 16,390 stations that collect only 1 element, considered the lowest. Most stations collect between 1 to 10 elements, with 4 
+            being the most common number of elements collected, as indicated by the peak in the distribution (Figure 3).
+        </p>
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/precipitation_project/Number_of_Stations.png') }}"
+          alt="Number of stations"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+          <figcaption>Figure 3. Number of stations by Elements</figcaption>
+        </figure>
+        <h4>4. Stations collected all five core elements</h4>
+        <p style="text-align: justify;">
+            There are 20,482 stations that collected all five core elements, 
+            this result by filtering element_counts table include only those stations where the core elements count equal 5. 
+        </p>
+        <h4>5. Stations collected only precipitation (PRCP) </h4>
+        <p style="text-align: justify;">
+            To determine the number of stations collected only precipitation the “sql.collect_set” had been used to collect the unique elements 
+            each stations had recorded the filtered only those set contained exactly precipitation element. As the result, there are 16,308 stations 
+            that collect only precipitation (PRCP). 
+        </p>
+        <h4>6. Schema of Enriched Station </h4>
+        <p style="text-align: justify;">
+            The element_counts table then joined with the station data based on the station_id which create a new dataframe name enriched_stations 
+            (see schema table below). Since Parquet’s columnar storage structure enables faster read operations and significantly reduces the amount 
+            of data read from disk, which is ideal for analytical queries. Additionally, Parquet enforces a schema, ensuring data consistency across 
+            operations and preventing structural inconsistencies issues since no need to redefine the schema (Kushwaha, 2024). As a result, the enriched_stations 
+            had been saved as Parquet file format for later analysis. 
+        </p>
+        <div class="table-container">
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 4. Schema of enriched stations
+            </caption>
+            <thead>
+              <tr>
+                <th style="border: 1px solid black; padding: 8px;">Data Type</th>
+                <th style="border: 1px solid black; padding: 8px;">Variable Names</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">String</td>
+                <td style="border: 1px solid black; padding: 8px;">
+                  <strong>
+                    Station_ID, Station_Name, GSN_Flag, HCN_CRN_Flag, WMO_ID,<br>
+                    COUNTRY_CODE, Country_Name, State_Code, State_Name
+                  </strong>
+                </td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Double</td>
+                <td style="border: 1px solid black; padding: 8px;"><strong>Latitude, Longitude, Elevation</strong></td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black; padding: 8px;">Integer</td>
+                <td style="border: 1px solid black; padding: 8px;">
+                  <strong>
+                    First_Year, Last_Year, Total_Years_Active, Total_Unique_Elements,<br>
+                    Core_Element_Count, Other_Element_Count, Total_Unique_Elements
+                  </strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h3> II. Comparison stations with daily dataset </h3>
+        <h4> 1. Stations in subset of daily thar are not in stations </h4>
+        <p style="text-align: justify;">
+            Since the entire daily data is large, it might waste a huge number of resources if checking all the missing stations all over the data. 
+            Therefore, to check the missing stations in daily, 1000 subset rows in daily data had been used to validate. A left anti join was performed 
+            between this subset and the stations dataset to identify any stations present in the daily subset but not in the station’s dataset. This approach 
+            returns only the rows from the daily subset where no corresponding match is found in stations. The result showed zero unmatched stations, 
+            indicating a complete match between the two datasets for this subset. 
+        </p>
+        <h4>2. The expensive of a left join & alternative approach </h4>
+        <p style="text-align: justify;">
+          The daily dataset is extremely large, with over 3 billion rows, while the enriched station is small which only contains 127,994 rows. 
+          In a left join, every row from daily dataset must be checked against the enriched stations, which means that the join operation needs to handle a 
+          massive volume of data. Spark often needs to shuffle data across the network to perform joins. Since the daily dataset is large, this shuffling can 
+          become a major bottleneck. A more efficient way to perform this operation would be to use a broadcast join. As the enriched stations dataset is small, 
+          it can be broadcasted to all worker nodes in the cluster (Necati, n.d.). By broadcasting enriched stations, each executor has a local copy of the smaller 
+          dataset, allowing for a fast and efficient join with the large daily dataset (Singh, n.d.). This approach eliminates the need for shuffling the large 
+          daily dataset across the network which save computation time, making the operation much more scalable.
+        </p>
+        <h4>3. Number of stations in daily that are not in stations </h4>
+        <p style="text-align: justify;">
+            To efficiently count the number of stations in the entire daily dataset that are not in the station dataset, a broadcast join was utilized, 
+            follow by performing an anti-join to identify any stations in the daily dataset does not present in the station’s dataset. The result showed that 
+            there are no missing stations in the daily dataset, as the count returned zero.
+        </p>
+        <h2>PART III: EXPLORING THE DAILY CLIMATE SUMMARIES</h2>
+        <h3>I. Understand the structure and format of daily dataset </h3>
+        <h4>1. Default block size in HDFS & Number of block required for the daily </h4>
+        <div class="table-container">
+          <table class="styled-table">
+            <thead>
+                <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                    Table 5. HDFS Block Distribution for 2023 and 2024
+                </caption>  
+              <tr>
+                <th style="border: 1px solid black;"></th>
+                <th style="border: 1px solid black;" colspan="2">2023</th>
+                <th style="border: 1px solid black;">2024</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid black;">Default block size (MB)</td>
+                <td style="border: 1px solid black;" colspan="2">128</td>
+                <td style="border: 1px solid black;"></td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black;">File Size (MB)</td>
+                <td style="border: 1px solid black;" colspan="2">168.40</td>
+                <td style="border: 1px solid black;">88.8</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black;">Number of blocks</td>
+                <td style="border: 1px solid black;" colspan="2">2</td>
+                <td style="border: 1px solid black;">1</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black;">Size per block (MB)</td>
+                <td style="border: 1px solid black;">Block 1</td>
+                <td style="border: 1px solid black;">Block 2</td>
+                <td style="border: 1px solid black;">Block 1</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid black;"></td>
+                <td style="border: 1px solid black;">128</td>
+                <td style="border: 1px solid black;">34.1</td>
+                <td style="border: 1px solid black;">88.8</td>
+              </tr>
+            </tbody>
+          </table>          
+        </div>
+        <p style="text-align: justify;">
+            The default block size in HDFS is 134,217,728 bytes which equivalent to 128 MB (1 MB = 1,048,576 bytes). For the daily climate summary file in 2024, 
+            which is 88,831,735 bytes (88.8 MB) and 8 replications, only one block is required because the file size is smaller than the default block size.
+            For the 2023 climate summary file, which is 168,357,302 bytes (168.4 MB) and 8 replication, two blocks are required
+        </p>
+        <p style="text-align: justify;">
+            The first block is 134,217,728 bytes (128 MB), and the second block is 34,139,574 bytes (34.1 MB). The first block is filled to the default block 
+            size limit, and the remaining data is stored in the second block (table 5).  Since all the replicates can be found in HDFS (Live_repl = 8), 
+            therefore all the files are healthy. 
+        </p>
+        <h4>2. Load and count the number of observation in 2023 & 2024 </h4>
+        <p style="text-align: justify;">
+            In Spark, a job is triggered by an action. In this scenario, there are two jobs: one for loading and counting the 2023 dataset, which 
+            contains 37,867,272 observations, and another for the 2024 dataset, which has 19,720,790 observations. Each job is divided into stages 
+            based on shuffle operations or transformations that require moving data across partitions. Since reading the data and counting the data still 
+            involves a reduce operation under the hood otherwise, we cannot get the total line count on one worker node to send that output to the master node, 
+            therefore, each job will consist of two stages (Figure 4). The number of tasks within each stage depends on the number of partitions in the dataset. 
+            As both the 2023 and 2024 datasets are compressed, there is only one partition in each file, so the data reading and counting operations are completed
+            in a single task per stage. As a result, there are two jobs, each with two stages, totalling four stages and four tasks executed across both jobs.
+        </p>
+        <div class="dag-card">
+          <figure>
+            <div class="dag-stack">
+              <img src="{{ url_for('static', filename='image/precipitation_project/RDD_Read_2023.jpg') }}"
+                   alt="RDD operations, 2023">
+              <div class="dag-gap"></div>
+              <img src="{{ url_for('static', filename='image/precipitation_project/RDD_Read_2024.jpg') }}"
+                   alt="RDD operations, 2024">
+              <figcaption>
+                Figure 4. DAG Represent RDD Operations in 2023 & 2024 in PySpark
+              </figcaption>
+            </div>
+          </figure>
+        </div>
+        <h4>3. Number of Files & Blocks Determines Task Count for Observation Counting </h4>
+        <p style="text-align: justify;">
+            The number of tasks does not always correspond to the number of blocks in each input. For example, the 2023 dataset was stored across 
+            2 HDFS blocks (128 MB and 34.1 MB). Since the block size is configured to be 128 MB in HDFS, this data typically split into 2 blocks and will 
+            have 2 tasks if each task processes one block. However, due to the file being compressed with Gzip, the situation is different, when Spark encounters 
+            a Gzip compressed file, it must be read the entire file as a single unit without parallelizing the read operation across blocks otherwise it would 
+            lead to corrupted chunks, because Gzip does not support splitting regardless of how many HDFS blocks it spans (Apache Spark and Data Compression, n.d). 
+            As a result, Spark creating only 1 task to process the entire file.
+        </p>
+        <h4>4. Load and Count Observations from 2014 - 2023: Task Execution and Input Partitioning </h4>
+        <p style="text-align:justify ;">
+            To load and count the total number of observations for the years 2014 to 2023 inclusively, a glob pattern was applied in the file path argument 
+            of the “read.csv()” function in Spark. Glob patterns are a type of wildcard syntax that allows specifying multiple files with a single expression 
+            (Select Files Using a Pattern Match, n.d.). In this case, the pattern {2014 to 2023} was used to match files corresponding to each year within the 
+            specified range.
+        </p>
+        <div class="table-container">
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 6. Job, Stage and Task Summary for 2014–2023
+            </caption> 
+            <thead>
+              <tr>
+                <th style="border: 1px solid black;" colspan="3">Read and Count Number Observations 2014 - 2023</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Number of jobs</td>
+                <td style="border: 1px solid black;" colspan="2">1</td>
+              </tr>
+              <tr>
+                <td>Stages</td>
+                <td style="border: 1px solid black;" colspan="2">2</td>
+              </tr>
+              <tr>
+                <td>Stages ID</td>
+                <td style="border: 1px solid black;">Stage 10</td>
+                <td style="border: 1px solid black;">Stage 11</td>
+              </tr>
+              <tr>
+                <td>Tasks per Stage</td>
+                <td style="border: 1px solid black;">10</td>
+                <td style="border: 1px solid black;">1</td>
+              </tr>
+              <tr>
+                <td>Input Sizes</td>
+                <td style="border: 1px solid black;" colspan="2">1581.1 MiB</td>
+              </tr>
+              <tr>
+                <td>Total Tasks Count</td>
+                <td style="border: 1px solid black;" colspan="2">11</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="text-align:justify ;">
+            This operation involves only one job, which is loading and counting 370,803,270 number of observations in the years between 2014 to 2023. 
+            For this job, there are 2 stages, which are defined as Stage 10 and Stage 11 in Table 6. The first stage processed an input size of 1581.1 MiB,
+             which was split into 10 tasks. The input data from the years 2014 to 2023 was divided into 10 partitions, with each partition being processed by 
+             a separate task. This partitioning occurred because the input files were compressed, and Spark typically treats as non-splitable partition 
+             (Achyuta, 2023), leading to one task per file. In this case, there were 10 compressed files one for each year, resulting in 10 partitions and, 
+             consequently, 10 tasks. The second stage performed the final count operation, which required only 1 task since the data had already been aggregated 
+             and did not require further partitioning.  In conclusion, there is 1 job and 2 stages, which total 11 tasks: Stage 10 has 10 tasks one for each year 
+             of data, and Stage 11 has only 1 task for the final aggregation. 
+        </p>
+        <h4>5. A summary of how to increase tasks run parallel </h4>
+        <p style="text-align:justify ;">
+            According to the 2023 and 2024 daily dataset, the file is stored in HDFS as a Gzip file, which cannot be split, Spark must read the entire file 
+            in a single task without parallel processing. By changing the file format to one that supports splitting, such as CSV or plain text, Spark can divide 
+            the file into multiple partitions and process them in parallel. This change would reduce the processing time when loading and counting the data. 
+        </p>
+        <p style="text-align:justify ;">
+            Since parallelism is limited when working with Gzip files in Spark due to the fact that each Gzip file is processed as a single partition, 
+            optimization can be achieved by processing as many Gzip files concurrently as possible. By using 4 executors and 2 cores per executor, we have a 
+            total of 8 cores available for task execution, allowing up to 8 tasks to run in parallel. Spark can thus process 8 Gzip files concurrently 
+            (as shown in Table 8), with the remaining 2 tasks processed afterward. The table below demonstrates that increasing the number of executors to 4 
+            and utilizing all available cores can significantly reduce the execution time by 3.56 times, ensuring efficient use of resources.  
+            <div class="table-container">
+              <table class="styled-table">
+                <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                    Table 7. Comparison of different executor and core utilization on counting number of observations in 2014 - 2023
+                </caption> 
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="border: 1px solid black;">Job</th>
+                    <th colspan="4" style="border: 1px solid black;">Read and count the observations in 2014 - 2023 (inclusive)</th>
+                  </tr>
+                  <tr>
+                    <th colspan="2" style="border: 1px solid black;">2 executors, 1 executor per core</th>
+                    <th colspan="2" style="border: 1px solid black;">4 executors, 2 executors per core</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Stages</td>
+                    <td style="border: 1px solid black;">First Stage</td>
+                    <td style="border: 1px solid black;">Second Stage</td>
+                    <td style="border: 1px solid black;">First Stage</td>
+                    <td style="border: 1px solid black;">Second Stage</td>
+                  </tr>
+                  <tr>
+                    <td>Number of tasks</td>
+                    <td style="border: 1px solid black;">10</td>
+                    <td style="border: 1px solid black;">1</td>
+                    <td style="border: 1px solid black;">10</td>
+                    <td style="border: 1px solid black;">1</td>
+                  </tr>
+                  <tr>
+                    <td>Tasks run parallel</td>
+                    <td style="border: 1px solid black;">2</td>
+                    <td style="border: 1px solid black;">1</td>
+                    <td style="border: 1px solid black;">8</td>
+                    <td style="border: 1px solid black;">1</td>
+                  </tr>
+                  <tr>
+                    <td ><em>Executive time (second)</em></td>
+                    <td style="border: 1px solid black; font-weight: bold;" colspan="2">57s</td>
+                    <td style="border: 1px solid black; font-weight: bold;" colspan="2">16s</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+        <h2>PART IV: Analysis</h2>
+        <h3>I. Overview of Stations Before Analysing Dailiy Climate Summaries</h3>
+        <h4>1. The number of stations in total, stations were active in 2024, stations in more than one network.</h4>
+        <p style="text-align:justify ;">
+            The analysis began by loading the enriched stations dataset from Parquet and make a simple count distinct operation to determine the total number 
+            of stations which result in 127,994. Next, a filter operation was applied to find out stations active in 2024, resulting that 35,616 stations were 
+            active. Furthermore, to analyse the distribution of stations across specific climatology networks, the dataset was filtered based on the “GSN_Flag”,
+            ” HCN_CRN_Flag”, and “HCN_CRN_Flag” columns. The result showed the presence of 991 stations in GCOS Surface Network (GSN), 1,218 in the US Historical 
+            Climatology Network (HCN), and 234 in the US Climate Reference Network (CRN). By filtering the stations with the GSN_Flag equal to 'GSN' and similarly 
+            filtering those with HCN_CRN_Flag, we count how many stations satisfy these conditions. As a result, there are 15 stations that belong to more than 
+            one network. 
+        </p>
+        <h4>2. Number of stations are there in the Southern Hemisphere & Territories of USA arounf the world.</h4>
+        <p style="text-align:justify ;">
+            To find out how many stations are in the Southern Hemisphere, we can filter the data frame based on the latitude of the stations. Since the negative 
+            latitudes represent Southern Hemisphere (Latitude/Longitude Format | PacIOOS, 2018). Therefore, we can filter stations that have the negative latitude.
+            As a result, there are 25,357 stations are located in the Southern Hemisphere. To determine the number of weather stations located in the territories 
+            of the United States around the world, excluding the mainland U.S., the dataset was filtered to include only those records where the country name 
+            contains "United States" but the country code is not 'US'. This filtering method ensured that only stations in U.S. territories were counted, excluding 
+            any stations in the continental United States. The result of this analysis revealed that there are 399 weather stations located in U.S territories 
+            around the world with the highest is Puerto Rico follow by Virgin Islands and Guam (see Appendix B).
+        </p>
+        <h4>3. Count the total number of stations in each country & state </h4>
+        <p style="text-align: justify ;">
+            The process starts by grouping the stations data by country code and counting the number of stations in each country using the group by and aggregate 
+            functions. The result is then joined with a dataset of countries, which is loaded from HDFS. This enriches the station data with country names, 
+            providing a clear view of the number of stations in each country. Similarly, the same method is applied to the states within the countries, offering 
+            detailed insights into the distribution of stations at the state level, these results was then saved to hdfs directory. According to Figure 5, the 
+            United States has the highest number of stations, followed by Australia and Canada. This is consistent with the observation that the top three states 
+            with the highest number of stations Texas, Colorado, and California are also located in the United States.
+        </p>    
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/precipitation_project/Top_10_Countriues&States_Highest_Stations.jpg') }}"
+          alt="Top 10 Highest Stations"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+          <figcaption>Figure 5. Top 10 countries & states with highest stations</figcaption>
+        </figure>
+
+        <h3>II. Geographical Distance Between 2 Stations</h3>
+        <h4>1. Haversine formula</h4>
+        <p style = "text-align: justify ;">
+            Since Euclidean distance assumes two points lie on a flat surface (Wikipedia, 2024), it is not accurate for real-world distances. 
+            The Haversine formula, on the other hand, calculates the shortest distance between two points on the Earth's surface using latitude and longitude, 
+            making it a more precise method for measuring geographical distances. It accounts for the Earth's spherical shape by converting these coordinates 
+            into radians and calculating the value square of half the chord length between the points. The central angle between the two points is then computed 
+            based on this squared of half the chord length. This angle is multiplied by the Earth's radius to find the distance, ensuring an accurate measurement 
+            on a curved surface (Bielski, 2019; Prasetya et al., 2020). The output is the shortest distance along the Earth's surface, accurately reflecting the 
+            spherical nature of the Earth. The Haversine formula shown below for better illustrate and has been generated using Python for stations distance 
+            calculation.
+        </p>
+        <div class="haversine-section" id="haversine-math">
+          <div class="haversine-flex">
+            <!-- Diagram -->
+            <div class="haversine-img">
+              <img src="{{ url_for('static', filename='image/precipitation_project/Haversine_Formula.png') }}" alt="Haversine Diagram">
+            </div>
+        
+            <!-- Formula -->
+            <div class="haversine-text">
+              <div class="formula-box">
+                <p>$$a = \sin^2\left(\frac{\Delta\varphi}{2}\right) + \cos(\varphi_1) \cdot \cos(\varphi_2) \cdot \sin^2\left(\frac{\Delta\lambda}{2}\right)$$</p>
+                <p>$$c = 2 \cdot \mathrm{atan2}\left(\sqrt{a}, \sqrt{1-a}\right)$$</p>
+                <p>$$d = R \cdot c$$</p>
+                <p><strong>Where:</strong></p>
+                <p>
+                  \(\varphi\) = latitude<br>
+                  \(\lambda\) = longitude<br>
+                  \(R\) = Earth radius (6371 km)<br>
+                  \(a\) = square of half the chord length between the points<br>
+                  \(c\) = central angle<br>
+                  \(d\) = distance between points
+                </p>
+              </div>
+            </div>
+          </div>
+          <p class="caption">Figure 6. The Haversine formula</p>
+        </div>
+        <!-- Minimal MathJax v3 setup (only TeX -> CHTML), no auto typeset -->
+        <script>
+          window.MathJax = {
+            loader: { load: ['input/tex', 'output/chtml'] },
+            tex: { inlineMath: [['\\(','\\)'], ['$', '$']], displayMath: [['$$','$$']] },
+            startup: { typeset: false }
+          };
+        </script>
+        <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+        <script>
+          document.addEventListener('DOMContentLoaded', () => {
+            if (window.MathJax) MathJax.typesetPromise([document.getElementById('haversine-math')]);
+          });
+        </script>
+        <h4>2. Validate the Haversine Function </h4>
+        <p style = "text-align:justify ;">
+            For validating, we used the small subset of stations in United States named and performing cross join to create a pair of stations. 
+            As the distance from station to itself is zero, the filter method was then applied to filter out the stations to itself. In conclusion, 
+            the Haversine function was then applied to obtain the distance between each station (see Appendix A).
+        </p>
+        <p style = "text-align:justify ;">
+            Geographically closest station in New Zealand: To find the geographically closest stations in New Zealand, we filtered the dataset to 
+            include only New Zealand stations and applied the Haversine function to calculate the distance between each pair. We then sorted the results by 
+            distance to identify the closest pair, which were Wellington Aero AWS and Paraparaumu AWS, with a distance of 52.09 kilometre (table 8).
+        </p>
+        <div class="distance-card">
+          <table class="distance-table">
+            <caption>Table 8. The geographic distance of two closest stations in New Zealand</caption>
+            <thead>
+              <tr>
+                <th>Station ID 1</th>
+                <th>Station Name 1</th>
+                <th>Latitude 1</th>
+                <th>Longitude 1</th>
+                <th>Station ID 2</th>
+                <th>Station Name 2</th>
+                <th>Latitude 2</th>
+                <th>Longitude 2</th>
+                <th>Distance KM</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>NZM00093439</td>
+                <td>WELLINGTON AERO AWS</td>
+                <td>-41.333</td>
+                <td>174.8</td>
+                <td>NZ000093417</td>
+                <td>PARAPARAUMU AWS</td>
+                <td>-40.9</td>
+                <td>174.983</td>
+                <td><strong>52.09</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h3> III. Daily data in detail </h3>
+        <h4> 1. Number of rows and observations in daily and 5 core elements </h4>
+        <p style = "text-align:justify ;">
+            The daily dataset has 3,119,374,043 rows. By applied the filtered to include only the observations corresponding to the five core elements 
+            (PRCP, SNOW, SNWD, TMAX, and TMIN) using the filter method, the subset of data containing these elements was grouped by the Element column, and the 
+            number of observations for each element was counted using the group by and count functions. As a result, the element with the most observation is 
+            Precipitation (PRCP) with 1,073,530,896 observations followed by TMAX and TMIN element (see Appendix C). 
+        </p>
+        <h4> 2. A number of observations of TMAX have no TMIN </h4>
+        <p style = "text-align:justify ;">
+            To determine the number of observations where TMAX does not have a corresponding TMIN, the dataset was first filtered to focus exclusively on 
+            temperature elements, specifically TMAX and TMIN. The data was then grouped by Station_ID and DATE, and the collect set function was used to 
+            aggregate the unique elements observed for each group. Since the daily dataset is large, this approach was chosen to reduce computationally 
+            expensive because it reduces data movement across the partitions. The array contains function was applied to filter these grouped records, checking 
+            for the presence of TMAX and the absence of TMIN. The final count were 10,567,304 observations where TMAX was recorded without a corresponding TMIN 
+            account for only 2.31% in total. These observations were contributed by 28,716 unique stations.
+        </p>
+        <h2> PART V: TIME SERIES & GEOSPATIAL VISUALIZATIONS DAILY CLIMATE </h2>
+        <h3>I. Time Series of TMIN anf TMAX across New Zealand </h3>
+        <h4>1. Summary of observations and time period covered </h4>
+        <p style = "text-align: justify ;">
+            To determine the number of observations and the number of years covered, the dataset was filtered to obtain all observations of 
+            TMIN (minimum temperature) and TMAX (maximum temperature) for all stations in New Zealand. This was done by extracting the first two characters 
+            of the “station id”, which represent for the country code. The filtered dataset contains 487,760 observations of TMIN and TMAX, covering a period 
+            of 85 years. The result was then saved to the HDFS directory as CSV format for further visualization. 
+        </p>
+        <h4>2. Time series of TMIN & TMAX for each station in New Zealand </h4>
+        <p style = "text-align:justify ;">
+            The new folder was created to store the part files containing TMIN and TMAX data for stations across New Zealand, which were copied from HDFS to 
+            the local machine for easier access. All of the CSV files were loaded and concatenated into a single data frame. The data was then filtered to retain 
+            only the relevant columns to facilitate more efficient manipulate. Since some stations have only collect a few records for whole year it will be not 
+            accurately represent the full annual cycle. Therefore, exclude these years ensures the time series reflects full annual data, making comparisons 
+            across years more consistent and reliable between stations. As the value represent in tenths of Celsius degree for each station, for easy human read 
+            the value had been converted to standard degrees Celsius. Since data smoothing is essentially the process of averaging data points in a time series 
+            (Dancker, 2022), to account for short-term fluctuations and emphasize long-term trends, a yearly average was applied for calculate the TMAX and TMIN 
+            values for each year. This method effectively reduces noise, making the underlying trends more visible in the visualizations. A series of subplots 
+            were generated for 15 stations, displaying the time series of TMAX and TMIN values across New Zealand (see Appendix D). The y-axis was kept consistent 
+            across all plots to allow for better comparison between stations. As a result, it was observed that four stations had missing data prior to the year 
+            2000 consider as gaps in data, as shown in the Figure 6 below:
+        </p>
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/precipitation_project/Time_Series_TMAX&TMIN.png') }}"
+          alt="TMAX & TMIN"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+          <figcaption>Figure 7. Time Series of TMIN and TMAX for New Zealand Stations with Missing Data Before 2000</figcaption>
+        </figure>
+        
+        <h4>3. A visualization of the average TMIN and TMAX for all New Zealand</h4>
+        <p style = "text-align:justify ;">
+            To visualize the average minimum and maximum temperature for entire New Zealand, 
+            the data was then group by year and calculated the average TMIN and TMAX for the entire country as below:
+        </p>
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/precipitation_project/Average TMIN&TMAX.png') }}"
+          alt="Average TMAX & TMIN"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+          <figcaption>Figure 8. Average TMIN and TMAX Over Time in New Zealand (1940-2020)</figcaption>
+        </figure>
+        <p style = "text-align:justify ;">
+            The plot shows the average maximum (TMAX) and minimum (TMIN) temperatures in New Zealand from 1940 to 2024. The initial drop in temperature may be 
+            due to early data coming from only a few warmer stations. As more stations, including those from cooler regions, were added over time, the average 
+            temperature dropped. Following this drop, the plot shows fluctuations. From 1960 there is a gradual rise in temperatures over time, particularly 
+            reflecting the warming trend.
+        </p>
+        <h3>II. Precipitation Observations Around the World </h3>
+        <h4>1. The average rainfall in each year for each country </h4>
+        <p style = "text-align:justify ;">
+            The daily dataset was filtered to retain only precipitation (PRCP) records with values greater than or equal to 0, as rainfall cannot be negative 
+            and ensuring that both rainy and dry periods are considered. The columns "Year" and "Country_Code" were added using the substring function, and the 
+            average rainfall for each year in each country was calculated, including days with no rainfall (value of 0), this allows for fair comparisons between 
+            countries with different rainfall patterns (e.g., tropical vs. arid regions). A broadcast join was then used to merge the result with the country 
+            table to retrieve the country names using the country code. The analysis shows that Equatorial Guinea had the highest average rainfall, with 4361 
+            tenths of mm in 2000. However, this result is not sensible because the station in Equatorial Guinea recorded only one data point in 2000, meaning the 
+            annual average is based on a single day's rainfall and is therefore not representative of the entire year. 
+        </p>
+        <h4>2. Descriptive statistics for the average rainfall </h4>
+        <div class="table-container">
+          <table class="styled-table">
+            <caption>Table 9. Descriptive statistics summary of average rainfall</caption>
+            <thead>
+              <tr>
+                <th>Summary</th>
+                <th>Average Rainfall</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Count</td><td>17384</td></tr>
+              <tr><td>Mean</td><td>41.82</td></tr>
+              <tr><td>Std dev</td><td>84.49</td></tr>
+              <tr><td>Min</td><td>0.0</td></tr>
+              <tr><td>Max</td><td>4361.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style = "text-align:justify ;">
+            The descriptive statistics of average rainfall were generated using the Spark describe function, covering 17,384 entries. Since days with no rainfall 
+            were included in the analysis, the overall average rainfall is lower, with a mean of 41.82 tenths of mm. The minimum value of 0 reflects the days with 
+            no rainfall, which skews the average downward. The maximum value of 4361.0 tenths of mm is highly misleading, as it comes from a station that recorded 
+            only one day of rainfall for an entire year. This might be an extreme outlier that does not reflect typical rainfall patterns. The standard deviation 
+            of 84.49 tenths of mm indicates a high level of variability in the data, further exaggerated by the inclusion of both dry days and extreme outliers. 
+            Therefore, the statistics, particularly the mean and maximum, are not fully sensible. Given the extreme variability observed in the descriptive 
+            statistics, it would be interesting to look at several extremely high average rainfall values. Based on the yearly average rainfall data, there are 
+            three countries have the extremely high value which is Equatorial Guinea (4361 tenths of mm), Dominican Republic (3414 tenths of mm) and Laos (2480.5).
+            These high value abnormal compare to there previous recorded (see Appendix E), which might because that these stations only recorded the value as a 
+            whole year rainfall or maybe it just recorded only the rainfall day, where should be take into account by investigation how the data was collected for 
+            these stations. As a result, several stations might have different collected method and not collected equally in each year, which lead to the fact that 
+            calculate the yearly average rainfall based on the number of observations might not be a concise approach.
+        </p>
+        <h4>3. Plot the average rainfall in 2023 for each country </h4>
+        <p style = "text-align:justify ;">
+            To address this issue, the total rainfall and the number of recorded days for each station in 2023 are first calculated, assuming that stations 
+            without any records during certain periods represent dry periods. The yearly average rainfall is then computed by dividing its total rainfall by the 
+            actual number of days it recorded. Since this calculation is weighted by the number of days each station recorded, stations with more data contribute 
+            more significantly to the final country average, the approach minimizes the influence of outliers into the overall average rainfall.  As a result, the 
+            approach produces a more balanced and concise representation of rainfall across all stations within a country. The result was then converted to 
+            millimetre (mm) for easy interpret and saved to local for visualizing. 
+        </p>
+        <p style = "text-align:justify ;">
+            Since Geopandas library does not support two characters country codes, country names were used for mapping. Several bracketed text in country names 
+            (e.g., U.S. territories) was removed to maintain consistency. To match country names between datasets, three methods were employed. First, regular 
+            expressions were used to match the first four characters of country names. Second, the FuzzyWuzzy library, using a 90% similarity threshold, matched 
+            names based on Levenshtein distance to calculate differences between sequences (FuzzyWuzzy, 2020). A combining column was created, based on whether 
+            the name was found by these two approaches. Finally, manual adjustments were made for countries that could not be matched by either method. 
+            The dataset was then merged with the Geopandas world dataset to plot global rainfall (Figure 16). As a result, some small countries and islands 
+            (e.g., Singapore, Maldives) do not appear in the Geopandas world dataset, which is why 31 countries could not be matched.
+        </p>
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/precipitation_project/Average_Rainfall_2023.png') }}"
+          alt="Average Rainfall 2023"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+          <figcaption>Figure 9. Global Average Rainfall by Country in 2023</figcaption>
+        </figure>
+        <p style = "text-align:justify ;">
+            The rainfall map shows the average rainfall across countries in 2023. Most countries fall within moderate rainfall ranges, aligning with the 
+            World Bank’s annual precipitation dataset (Average Annual Precipitation, 2024), as indicated by lighter shades of green and yellow. White areas 
+            represent countries with missing data due to mismatches between the dataset and the plotting library. Azerbaijan, marked in dark blue, stands out 
+            with the highest recorded rainfall, exceeding 3500 mm. However, the average precipitation in Azerbaijan was 456.41 mm in 2022 (TRADING ECONOMICS, n.d.),
+            suggesting the 2023 value may be an outlier, especially since neighbouring countries do not exhibit similarly high rainfall values. 
+        </p>
+        <h2> CONCLUSION </h2>
+        <p style = "text-align:justify ;">
+            This project involved a comprehensive exploration of the GHCND dataset. Key objectives included understanding the structure of the dataset, 
+            efficiently loading and analysing data types in Spark, and enriching the 'station' data with relevant metadata. The analysis provided important 
+            insights into station information across various countries, with a specific focus on New Zealand. A custom function was also developed to calculate 
+            distances between stations. Furthermore, the examination of daily climate summaries contributed valuable insights, deepening the understanding of 
+            historical climate trends and patterns.
+        </p>
+        <p style="text-align: center; font-size: 24px; font-weight: bold;">
+            THANK YOU FOR READING!
+        </p>
+    </section>
+
+    <!-- Reference Section --> 
+    <section>
+        <h2 style="color: #0b5394; text-transform: uppercase;">References</h2>
+        <ol>
+            <li>
+                <a href="https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.functions.substring.html" target="_blank">
+                PySpark SQL functions.substring — PySpark 3.1.1 documentation
+                </a>.
+            </li>
+            <li>
+                <a href="https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.trim.html" target="_blank">
+                PySpark SQL functions.trim — PySpark 3.5.2 documentation
+                </a>.
+            </li>
+            <li>
+                Nelamali, N. (2024, May 10). PySpark SQL Left Anti Join with Example. Spark by {Examples}. 
+                <a href="https://sparkbyexamples.com/pyspark/pyspark-sql-left-anti-join-with-example/" target="_blank">[Link]</a>.
+            </li>
+            <li>
+                Kushwaha, N. (2024, January 29). Deep Dive into Apache Parquet: Efficient Data Storage for Analytics. Medium. 
+                <a href="https://learncsdesigns.medium.com/understanding-apache-parquet-d722645cfe74" target="_blank">[Link]</a>.
+            </li>
+            <li>
+                Singh, L. (n.d.). Optimize Big Data Performance with Broadcast Hash Join in PySpark. 
+                <a href="https://www.c-sharpcorner.com/article/optimize-big-data-performance-with-broadcast-hash-join-in-pyspark/" target="_blank">[Link]</a>.
+            </li>
+            <li>
+                Necati, D. (n.d.). Apache Spark optimization techniques. Toptal. Retrieved August 27, 2024. 
+                <a href="https://www.toptal.com/spark/apache-spark-optimization-techniques" target="_blank">[Link]</a>.
+            </li>
+            <li>
+                Apache Spark and data compression. (n.d.). 
+                <a href="https://www.waitingforcode.com/apache-spark/apache-spark-data-compression/read" target="_blank">[Link]</a>.
+            </li>
+            <li>
+                Achyuta, H. (2023, August 1). Understanding Initial Partitions in Apache Spark. Medium. 
+                <a href="https://medium.com/@harshavardhan.achyuta/understanding-initial-partitions-in-apache-spark-750e831402d3" target="_blank">[Link]</a>.
+            </li>
+            <li>
+                Latitude/Longitude Format | PacIOOS. (2018, August 10). Pacific Islands Ocean Observing System. 
+                <a href="https://www.pacioos.hawaii.edu/voyager-news/lat-long-formats/" target="_blank">[Link]</a>.
+            </li>
+            <li>
+                Bielski, N. (2019, May 6). Using a Custom UDF in PySpark to Compute Haversine Distances. Medium. 
+                <a href="https://medium.com/@nikolasbielski/using-a-custom-udf-in-pyspark-to-compute-haversine-distances-d877b77b4b18" target="_blank">[Link]</a>.
+            </li>
+            <li>
+                Prasetya, D. A., Nguyen, P. T., Faizullin, R., Iswanto, I., & Armay, E. F. (2020). Resolving the shortest path problem using the haversine algorithm. 
+                Journal of Critical Reviews, 7(1), 62–64. 
+                <a href="https://doi.org/10.21559/jcr.07.01.11" target="_blank">[DOI]</a>.
+            </li>
+            <li>
+                Dancker, J. (2022, September 27). A brief introduction to time series smoothing. Medium. 
+                <a href="https://medium.com/@jodancker/a-brief-introduction-to-time-series-smoothing-4f7ed61f78e1" target="_blank">[Link]</a>.
+              </li>
+              <li>
+                Fuzzywuzzy. (2020, February 13). PyPI. 
+                <a href="https://pypi.org/project/fuzzywuzzy/" target="_blank">[Link]</a>.
+              </li>
+              <li>
+                Euclidean distance. (2024, August 23). Wikipedia. 
+                <a href="https://en.wikipedia.org/wiki/Euclidean_distance" target="_blank">[Link]</a>.
+              </li>
+              <li>
+                Average annual precipitation. (2024, May 20). Our World in Data. 
+                <a href="https://ourworldindata.org/grapher/average-precipitation-per-year" target="_blank">[Link]</a>.
+              </li>
+              <li>
+                TRADING ECONOMICS. (n.d.). <em>Azerbaijan average precipitation</em>. 
+                <a href="https://tradingeconomics.com/azerbaijan/precipitation" target="_blank">[Link]</a>.
+              </li>
+        </ol>
+    </section>
+    <!-- Appendix Section --> 
+    <section>
+        <h2 style="color: #004E66; font-weight: bold;">APPENDIX</h2>
+        <!-- Appendix A -->
+        <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+            APPENDIX A: Station Distance in United States
+            </h3>
+            <p>This appendix presents the distances between weather stations in the United States. The distances are calculated using the Haversine formula, 
+                which accounts for the curvature of the Earth
+            </p>
+            <p>
+            <strong><u>Table A1: Distance between stations in the United States using Haversine formula.</u></strong>
+            </p>
+            <div class="table-container">
+              <table class="styled-table">
+                <thead>
+                  <tr>
+                    <th style="border: 1px solid black; padding: 5px;">Station_ID 1</th>
+                    <th style="border: 1px solid black; padding: 5px;">Station_Name 1</th>
+                    <th style="border: 1px solid black; padding: 5px;">Latitude 1</th>
+                    <th style="border: 1px solid black; padding: 5px;">Longitude 1</th>
+                    <th style="border: 1px solid black; padding: 5px;">Station_ID 2</th>
+                    <th style="border: 1px solid black; padding: 5px;">Station_Name 2</th>
+                    <th style="border: 1px solid black; padding: 5px;">Latitude 2</th>
+                    <th style="border: 1px solid black; padding: 5px;">Longitude 2</th>
+                    <th style="border: 1px solid black; padding: 5px;">Distance KM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="border: 1px solid black; padding: 5px;">US10buff020</td>
+                    <td style="border: 1px solid black; padding: 5px;">KEARNEY 3.0 NNE</td>
+                    <td style="border: 1px solid black; padding: 5px;">40.7407</td>
+                    <td style="border: 1px solid black; padding: 5px;">-99.0647</td>
+                    <td style="border: 1px solid black; padding: 5px;">US10adam007</td>
+                    <td style="border: 1px solid black; padding: 5px;">HASTINGS 5.4 WSW</td>
+                    <td style="border: 1px solid black; padding: 5px;">40.5389</td>
+                    <td style="border: 1px solid black; padding: 5px;">-98.4713</td>
+                    <td style="border: 1px solid black; padding: 5px;">66.07</td>
+                  </tr>
+                  <tr>
+                    <td style="border: 1px solid black; padding: 5px;">US10buff020</td>
+                    <td style="border: 1px solid black; padding: 5px;">KEARNEY 3.0 NNE</td>
+                    <td style="border: 1px solid black; padding: 5px;">40.7407</td>
+                    <td style="border: 1px solid black; padding: 5px;">-99.0647</td>
+                    <td style="border: 1px solid black; padding: 5px;">US10adam023</td>
+                    <td style="border: 1px solid black; padding: 5px;">JUNIATA 1.8 ENE</td>
+                    <td style="border: 1px solid black; padding: 5px;">40.5981</td>
+                    <td style="border: 1px solid black; padding: 5px;">-98.4732</td>
+                    <td style="border: 1px solid black; padding: 5px;">65.82</td>
+                  </tr>
+                  <tr>
+                    <td style="border: 1px solid black; padding: 5px;">US10buff020</td>
+                    <td style="border: 1px solid black; padding: 5px;">KEARNEY 3.0 NNE</td>
+                    <td style="border: 1px solid black; padding: 5px;">40.7407</td>
+                    <td style="border: 1px solid black; padding: 5px;">-99.0647</td>
+                    <td style="border: 1px solid black; padding: 5px;">US10box_007</td>
+                    <td style="border: 1px solid black; padding: 5px;">ALLIANCE 5.9 NE</td>
+                    <td style="border: 1px solid black; padding: 5px;">42.1675</td>
+                    <td style="border: 1px solid black; padding: 5px;">-102.8005</td>
+                    <td style="border: 1px solid black; padding: 5px;">416.46</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- Appendix B -->
+            <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+                APPENDIX B: Number of Stations in United States Territory
+            </h3>
+            <p>This appendix provides number of weather stations located in different United States territories</p>
+            <p>
+            <strong><u>Figure B1: Number of Stations in US Territories by Country</u></strong>
+            </p>
+            <figure class="image-card">
+              <img src="{{ url_for('static', filename='image/precipitation_project/No_Stations_in_US.png') }}" 
+              alt="Number of stations in US"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+              >
+            </figure>
+            <!-- Appendix C -->
+            <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+                APPENDIX C: Core Elements Observations
+            </h3>
+            <p>The appendix summarizes the total observations for each core element collected by weather stations collected.</p>
+            <p>
+            <strong><u>Figure C1: Number of Observations for Each Core Element </u></strong>
+            </p>
+            <figure class="image-card">
+              <img src="{{ url_for('static', filename='image/precipitation_project/No_Observation_Core_Elements.png') }}" 
+              alt="Number of stations in each elements"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+              >
+            </figure>
+            <!-- Appendix D -->
+            <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+                APPENDIX D: Time Series Plots of TMIN and TMAX by Station in New Zealand
+            </h3>
+            <p>This appendix shows time series plots for the minimum (TMIN) and maximum (TMAX) temperatures recorded by different weather stations in New Zealand.
+            </p>
+            <p>
+            <strong><u>Figure D1: Time Series Plot for TMIN and TMAX by Station in New Zealand </u></strong>
+            </p>
+            <figure class="image-card">
+              <img src="{{ url_for('static', filename='image/precipitation_project/Time_Series_TMIN&TMAX_NZ.png') }}"
+              alt="Time Series TMIN & TMAX across NZ"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+              >
+            </figure>
+            
+             <!-- Appendix E -->
+             <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+                APPENDIX E: Analysis of Rainfall Extremes
+            </h3>
+            <p>This appendix shows average rainfall distribution of countries which have the extremely high values of rainfall to investigate the potential outliers.
+            </p>
+            <p>
+            <strong><u>Figure E1: Histogram of countries that have extremely high average rainfall over years. </u></strong>
+            </p>
+            <figure class="image-card">
+              <img src="{{ url_for('static', filename='image/precipitation_project/Extremes_Rainfall.png') }}"
+              alt="Extreme Raifall (Outliers)"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+              >
+            </figure>
+</body>
+<footer>
+  <p style="text-align: center;"> © 2024 Scalable Data Science Project </p>
+</html>

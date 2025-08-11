@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        GEOSPATIAL CRASH HOTSPOTS 
+    </title>
+    <link rel="stylesheet" href="/static/style_geospatial_crash.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 80px auto 0; /* top padding for fixed navbar */
+            padding: 40px 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        section {
+            margin-bottom: 50px;
+        }
+    </style>
+</head>
+<body class="body">
+    {% include "navigate_bar.html" %}
+    <h1 style="text-align: center;">
+        CAR CRASH HOTSPOTS ANALYSIS IN WELLINGTON CITY  
+    </h1>
+    <div class="author-info">
+        <p><strong>Author:</strong> Dario Dang<br>
+           <strong>Date:</strong> November 25, 2024<br>
+            <a href="https://github.com/DarioDang/wellington-crash-modelling" target="_blank">Code File</a>
+        </p>
+    </div>
+    <section>
+        <h2> I. INTRODUCTION</h2>
+        <h3> 1. Background</h3>
+        <p style = "text-align: justify;">
+            Road traffic accidents constitute a significant contributor to premature mortality, ranking tenth worldwide in incidence and 
+            ninth in Disability Adjusted Life Years (DALYs), whereas in high – income nations, they are the third leading cause of death 
+            (WHO,2000). Nonetheless, road traffic accident rates, whether assessed by population or distance traveled, are consistently 
+            declining in developed nations due to enhanced safety in roads and vehicles. In New Zealand, road traffic accidents continue to 
+            be a major concern despite progress in road safety measures. In 2022, 375 road deaths were recorded, marking a slight increase 
+            from previous years (ITF, 2023). Since road safety is a top priority, government’s Road to Zero strategy aiming for 40% reduction 
+            in deaths and serious injuries by 2030 (ITF, 2023). 
+        </p>
+        <h3> 2. Research Questions </h3>
+        <p style = "text-align: justify;">
+            Wellington is the mountainous terrain with serpentine roads and recurrent extreme weather conditions which usually include strong 
+            winds and heavy rainfall, this presents the distinct driving problems. According to (Wang et al., 2021), the presence road surface 
+            condition, road pavement condition were significant factors affecting the severity of vehicle. Moreover, as Wellington is the 
+            capital of New Zealand, this has high levels of both commuter traffic and tourism which might have a significant impact on road 
+            accidents especially during the peak hours which contribute to traffic congestion and accidents. 
+        </p>
+        <p style = "text-align: justify;">
+            This report focusses on analyze the car crash at Wellington city, with mainly focus to answer two critical questions:
+        </p>    
+        <ol>
+            <li>Where are the spatial hotspots of road traffic accidents in Wellington?</li>
+            <li>What are the key factors influencing the severity of road traffic accidents in Wellington?</li>
+        </ol>
+        <p style = "text-align: justify;">
+            In order to answer these two questions, this analysis uses data from the Crash Analysis System (CAS) which record all traffic 
+            crashes reported by the New Zealand police. 
+        </p>  
+        <h2> II. DATA AND METHODS  </h2>
+        <h3> 1. Data Overview </h3>
+        <h4> 1.1 Crash Analysis System (CAS) </h4>
+        <p style = "text-align: justify;">
+            Crash severity is the most severely injured casualty occurring as a result of crash (Austroads, 2003). According to CAS data, 
+            the severity of a crash had been divided into 4 different types (table 1). 
+        </p>
+        <div class="table-container">
+            <div class="table-title">Table 01. Types of car crashes</div>
+            <table class="styled-table">
+              <thead>
+                <tr>
+                  <th>Types of Crashes</th>
+                  <th>Definition</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Non – injury crash</strong></td>
+                  <td>Property damage only</td>
+                </tr>
+                <tr>
+                  <td><strong>Minor crash</strong></td>
+                  <td>Injury which is not ‘serious’ but requires first aid, or which causes discomfort or pain to the person injured.</td>
+                </tr>
+                <tr>
+                  <td><strong>Serious crash</strong></td>
+                  <td>Injury (fracture, concussion, severe cuts or other injury) requiring medical treatment or removal to and retention in hospital.</td>
+                </tr>
+                <tr>
+                  <td><strong>Fatal crash</strong></td>
+                  <td>A death occurring as the result of injuries sustained in a road crash within 30 days of the crash.</td>
+                </tr>
+              </tbody>
+            </table>
+        </div>
+        <p style = "text-align: justify;">
+            As serious car crashes and fatal often involves significant injuries or fatalities that usually result in severe consequences 
+            such as hospitalization and loss of life, we chosen to group serious crash and fatal crash into group. On the other hand, both 
+            non – injury crash and minor crash often share common characteristics such as lack of injuries and minimal need for medical 
+            attention, in order to make our analysis easy to interpret, this analysis only consider 2 types of crash: serious (include fatal) 
+            crash, non - injury crash. 
+        </p>
+        <p style = "text-align: justify;">
+            To make sure our research represents the latest period, we first considered relying exclusively on the last three years of our 
+            dataset of accidents. By looking at the yearly number of crashes, we decided that data was too sparse to do any meaningful model 
+            development since the number went down to only 1,338 cases of Non - Injury Crashes and 131 cases of Serious Crashes (include fatal).
+            In light of this constraint, we extended the timeframe to the past decade (2015–2024), yielding a more substantial dataset 
+            (non - injury crashes: 9,031; serious crashes: 589), while still including the most current years. This decision guarantees 
+            sufficient data for the effective processing of the model. The figure below shown the Non – injury and Serious/Fatal crash at a 
+            chosen period (2015 – 2024). 
+        </p>
+        <figure class="image-card">
+            <img
+              src="{{ url_for('static', filename='image/geospatial_crash_project/Non-injury & Serious Crashes.png') }}"
+              alt="Bar chart comparing non-injury vs serious/fatal crashes by year, 2015–2024"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+            >
+            <figcaption>Figure 1: Number of crashes 2015–2024</figcaption>
+        </figure>
+        <p style = "text-align: justify;">
+            According to figure 01, although the COVID-19 pandemic influenced road traffic because of lockdowns, car crashes still happened 
+            during this period. Based on the trend from figure 02, non - injury crashes and serious crashes (including fatal), occurred at 
+            different levels during the pandemic years, 2020–2021. Continuity of crashes during the pandemic, therefore, only reinforces this 
+            period for incorporation into our analysis of car crashes. In other words, including the period of the pandemic into our analysis 
+            ensures that our study captures every form of behavior associated with crashes, including shifts resulting from outside events like 
+            COVID-19.
+        </p>
+        <figure class="image-card">
+            <img
+              src="{{ url_for('static', filename='image/geospatial_crash_project/Trend_Minor&Serious_Crashes.png') }}"
+              alt="Trend_Minor&Serious_Crashes"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+            >
+            <figcaption>Figure 2: Number of crashes during pandemic</figcaption>
+        </figure>
+        <h4> 1.2 Wellington SA2 Dataset </h4>
+        <p style = "text-align: justify;">
+            Our focus is car crashes within Wellington City; however, the raw dataset encompasses the entire Wellington region. So, we 
+            filtered out the points that were outside of Wellington City to make sure that we are analyzing only crashes within the city 
+            boundaries. For this purpose, we used the New Zealand territorial authority boundaries provided by StatsNZ, this dataset is the 
+            authoritative source for annually updated territorial boundaries. We filtered this crash data to include only those crashes that 
+            had a TA code for Wellington City. We performed another spatial join in order to clean this data set further and retain only car 
+            crashes that fell inside the Wellington City boundary. The plot below outlines how many car crashes existed before and after the 
+            spatial join was used. Originally there were 30,464 crashes in the Wellington region. After filtering, 12,291 crashes remained 
+            within Wellington City indicate that half of them was outside the city boundary.
+        </p>
+        <figure class="image-card">
+            <img
+              src="{{ url_for('static', filename='image/geospatial_crash_project/Number_Crashes_After_Filter.png') }}"
+              alt="Number of Crashes After Filter Wellington City"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+            >
+            <figcaption>Figure 3: Chart shown the number of crashes inside and outside Wellington city</figcaption>
+        </figure>
+        <h4> 1.3 Wellington Liquid Store Location </h4>
+        <p style = "text-align: justify;">
+            The use of alcohol alters driving performance even at low dosage levels (e.g. at blood alcohol levels, [BALs] 
+            as low as .02% [Moskowitz, Bums, and Williams 1985]). It has been indicted as affecting response times to dangerous road 
+            situations (West et al. 1993).  According to (Heeren, et al. 1985 and Ostrom and Eriksson 1993), the majority of single-vehicle 
+            nighttime fatal crashes are alcohol involved. Based on previous research, the impact of alcohol retail seems to have a significant 
+            impact on the car crash, hence, we used the alcohol store location in Wellington city provided by OpenStreetMap to include in our 
+            analysis. This was performed by calculate the distance between the car crash and the alcohol store (using spatial nearest join) to 
+            identify the influence of liquor store on the crash. 
+        </p>
+        <h3> 2. METHODOLOGY </h3>
+        <h4> 2.1 Spatial Hotspot Analysis </h4>
+        <p style = "text-align: justify;">
+            In this analysis, both Global and Local Moran's I will be implemented. Global Moran's I will determine the overall spatial 
+            autocorrelation to display whether accidents are dispersed, random, or clustered within the region. Local Moran's I on the other 
+            hand provide detailed information by highlight the distinct regions as clusters of high or low crash rates. Other papers looking 
+            at the spatial autocorrelation of crash frequencies also have used Moran’s I to investigate crash data at similar levels of 
+            spatial aggregation (Matkan et al., 2013). This article also used both Global and Local Moran’s I analysis to conclude the 
+            frequency and location of traffic incidents, global Moran’s I was used to highlight where clusters exist while Local Moran’s 
+            I was used to indicate the place and type of spatial autocorrelation. Finding regions with high or low rates of accidents and 
+            determining the extent of spatial autocorrelation in the data will be able to evaluate the specific regions which have a 
+            disproportionate number of crashes, this may warrant targeted road safety improvements. Figure 5 shows the hotspot analysis 
+            method that would be used in this analysis. 
+        </p>
+        <!-- Optional card wrapper to match your page style -->
+        <div style="
+        max-width: 980px; margin: 24px auto; padding: 16px;
+        background: rgba(255,255,255,.75); backdrop-filter: blur(4px);
+        border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.08);
+        ">
+
+        <svg viewBox="0 0 1200 300" width="100%" height="auto" role="img" aria-label="Hotspot analysis workflow">
+        <style>
+        .box{fill:#fff; stroke:#333;}
+        .text{font: 14px/1.3 'Segoe UI', Arial, sans-serif; fill:#1f2d3d; text-anchor: middle;}
+        .arrow{stroke:#333; stroke-width:2; fill:none; marker-end:url(#arrowhead);}
+        .caption{font: 12px 'Segoe UI', Arial, sans-serif; fill:#334e5a;}
+        </style>
+            <!-- Arrowhead -->
+            <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#333"></polygon>
+            </marker>
+            </defs>
+
+            <!-- Row 1 (left to right) -->
+            <!-- Data Collection -->
+            <rect class="box" x="20" y="120" width="160" height="60"></rect>
+            <text class="text" x="100" y="150">Data Collection</text>
+
+            <!-- Data Preprocessing -->
+            <rect class="box" x="210" y="120" width="180" height="60"></rect>
+            <text class="text" x="300" y="150">Data Preprocessing</text>
+
+            <!-- Spatial Aggregation -->
+            <rect class="box" x="420" y="120" width="180" height="60"></rect>
+            <text class="text" x="510" y="150">Spatial Aggregation</text>
+
+            <!-- KDE Map -->
+            <rect class="box" x="630" y="120" width="200" height="60"></rect>
+            <text class="text" x="730" y="150">Kernel Density Estimation Map</text>
+
+            <!-- Hotspot Analysis -->
+            <rect class="box" x="860" y="120" width="160" height="60"></rect>
+            <text class="text" x="940" y="150">Hotspot Analysis</text>
+
+            <!-- Arrows across the top row -->
+            <line class="arrow" x1="180" y1="150" x2="210" y2="150"></line>
+            <line class="arrow" x1="390" y1="150" x2="420" y2="150"></line>
+            <line class="arrow" x1="600" y1="150" x2="630" y2="150"></line>
+            <line class="arrow" x1="830" y1="150" x2="860" y2="150"></line>
+
+            <!-- Branch from Hotspot Analysis to Global & Local Moran's I -->
+            <!-- Split lines -->
+            <path class="arrow" d="M 1020 150 C 1050 150, 1060 120, 1060 100"></path>
+            <path class="arrow" d="M 1020 150 C 1050 150, 1060 180, 1060 200"></path>
+
+            <!-- Global Moran's I (top branch) -->
+            <rect class="box" x="1000" y="60" width="170" height="50"></rect>
+            <text class="text" x="1085" y="85">Global Moran's I</text>
+
+            <!-- Local Moran's I (bottom branch) -->
+            <rect class="box" x="1000" y="190" width="170" height="50"></rect>
+            <text class="text" x="1085" y="215">Local Moran's I</text>
+
+            <!-- Join back to 'Produce Hotspot Maps' -->
+            <path class="arrow" d="M 1170 85 C 1185 95, 1188 110, 1170 130"></path>
+            <path class="arrow" d="M 1170 215 C 1185 205, 1188 190, 1170 170"></path>
+
+            <!-- Produce Hotspot Maps (center-right) -->
+            <rect class="box" x="1210" y="120" width="190" height="60"></rect>
+            <text class="text" x="1305" y="150">Produce Hotspot Maps</text>
+            </svg>
+            </div>
+        <p style = "text-align: justify;">
+            The data aggregation method will convert crash locations into spatially significant units by combining them into predefined 
+            polygons such as statistical regions or mesh blocks. This phase ensures the appropriate spatial units for conducting Moran's I 
+            analysis. This aggregation is essential for guaranteeing that the hotspot analysis results are statistically sound and spatially 
+            interpretable. Prior research has employed the Traffic Analysis Zone (TAZ) as the analytical spatial unit (Soltani & Askari, 2017). 
+            We have chosen to utilize the SA2 unit level for analysis in our study, as it is comparable in size to the TAZ used in prior 
+            research. We have opted to utilize the SA2 level for data aggregation, since it will render hotspots discernible and interpretable, 
+            given that SA2 zones are delineated by roads and are sufficiently large to be represented on a map of Wellington.
+        </p>
+        <h4> Kernel Density Estimation</h4>
+        <p style = "text-align: justify;">
+            Kernel Density Estimation (KDE) is a widely utilized technique for analyzing the first-order characteristics of a point event 
+            distribution (Bailey & Gatrell, 1995; Silverman, 1986), mostly due to its simplicity and ease of implementation. The purpose of 
+            KDE is to produce a smooth density surface of point events over space by computing event intensity as density estimation. Hence, 
+            in our study, before data is aggregated to the SA2 polygons for analysis, the points can be turned into a KDE surface to understand 
+            basic patterns and areas with high accident rates. This has previously been used as a tool for finding hotspots in other crash 
+            research and in some cases has outperformed other spatial models (Hashimoto, et al. 2016). These KDE maps can be used to get an 
+            initial idea of where hot or cold spots may occur within Wellington before deeper statistical analysis.
+        </p>
+        <h3> 3. Model </h3>
+        <p style = "text-align: justify;">
+            In the following analysis, we want to find which of the variables have significant effects on the magnitude of automotive crashes. 
+            We will take the target variable as a binary class: 0-Non-Injury Crashes, 1-Serious/Fatal Crashes. We merged Serious and Fatal 
+            Crashes into one category (as mentioned below). Excluding Minor Crashes would provide a sharper contrast between the classes 
+            since minor crashes are in a gray area that may obscure an analysis. The major model building process is shown in Figure 5 below.
+        </p>
+        <div class="workflow-grid">
+            <!-- Row 1 -->
+            <div class="step">Variable Selection</div>
+            <div class="arrow">→</div>
+            <div class="step">Handling Class Imbalance</div>
+            <div class="arrow">→</div>
+            <div class="step">Data Cleaning</div>
+        
+            <!-- Row 2 -->
+            <div class="step">Model Comparison</div>
+            <div class="arrow">→</div>
+            <div class="step">Logistic Regression (LR)</div>
+            <div class="arrow">→</div>
+            <div class="step">Final Model Selection</div>
+        </div>
+        <h4> 3.1 Feature Selection </h4>
+        <p style = "text-align: justify;">
+            The independent variables selected for this model include flatHill (Whether the road is flat or sloped), light (lighting conditions), 
+            roadSurface (surface condition sealed or not), speed limit, intersection and two weather-related variables, weatherA(rain, snow, mist),
+            weatherB(frost, wind) and distance to alcohol store. These variables are informed by prior research, ensuring relevance to crash 
+            severity. For instance, Edwards (1998) compared accident severity across adverse weather conditions such as rain, fog, and wind 
+            against fine weather. Similarly, Bazzanaa et al. (2019) explored how speed enforcement systems influence accidents on highways. 
+            Lighting conditions are also significant; Jackett and Frith (2013) highlighted a 35% reduction in crashes when lighting was improved, 
+            according to the NZTA Economic Evaluation Manual. Further, Lee et al. (2015) and Hosseinpour et al. (2014) found that factors such as 
+            road surface conditions and horizontal curvature are linked to more severe crashes. The study from (GRUENEWALD & PONICKI, 1995) 
+            strongly support greater overall use of alcohol is related to greater likelihoods of death in alcohol-involved crashes.
+        </p>
+        <div class="table-container">
+            <div class="table-title">Table 02. Feature Selection</div>
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Variables</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>flatHill</strong></td>
+                        <td>Whether the road is flat or sloped. Possible values include 'Flat' or 'Hill'.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>light</strong></td>
+                        <td>The light at the time and place of the crash.<br>
+                            Possible values: 'Bright Sun', 'Overcast', 'Twilight', 'Dark' or 'Unknown'.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>intersection</strong></td>
+                        <td>A derived variable to indicate if a crash occurred at an intersection (<em>intsn</em>) or not.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>roadSurface</strong></td>
+                        <td>The road surface description applying at the crash site.<br>
+                            Possible values: 'Sealed' or 'Unsealed'.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>speed limit</strong></td>
+                        <td>The speed (<em>spd</em>) limit (<em>lim</em>) in force at the crash site at the time of the crash.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>weather A</strong></td>
+                        <td>Indicates weather at the crash time/place. Values that are possible are 'Fine', 'Mist', 
+                            'Light Rain', 'Heavy Rain', 'Snow', 'Unknown'.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>weather B</strong></td>
+                        <td>The weather at the crash time/place. Values: 'Frost', 'Strong Wind' or 'Unknown'.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Distance to alcohol store</strong></td>
+                        <td>The distance between the crash from the nearest alcohol store (in kilometers).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <h4> 3.2 Data Cleaning </h4>
+        <p style = "text-align: justify;">
+            Addressing missing data is another crucial step. During the exploratory phase, we found that the intersection data had a 100% 
+            missing rate. To resolve this, we sourced intersection data from Wellington’s records, which allows us to impute the missing 
+            values and maintain data integrity for our model.
+        </p>
+        <h4> 3.3 Handling Class Imbalance </h4>
+        <p style = "text-align: justify;">
+            A problem associated with our dataset of car crashes in Wellington over the last 10 years is the huge class imbalance. The ratio 
+            of Non-Injury to Serious/Fatal crashes is about 15:1; less than 1% of the data is of the positive class. Such a skewed class 
+            balance can bias the model toward negativity and hence neglect the patterns that correspond to more serious crashes. In balancing 
+            this, we apply down-sampling to the negative class to get a 4:1 ratio. The selection is informed by research of (Mehdi 2013), who 
+            used similar ratios for crash severity analysis, and (Tom Williams, 2018), who applied this in modelling bicycle-motor vehicle 
+            crashes in Christchurch. 
+        </p>
+        <h4> 3.4 Logistic Regression Model </h4>
+        <p style = "text-align: justify;">
+            First, we apply a Standard Logistic Regression model to predict crash severity. However, the inherent spatial nature in car 
+            crashes requires us to check whether a spatial pattern in the residuals is driving the model. If Moran's I detect some 
+            spatial autocorrelation, then this may mean that the location itself plays a role in the crash severity not captured by the 
+            variables themselves. Then we might need Geographical Weight Logistic Regression (GWLR) model to see if this better fit by 
+            comparing the AUROC and Pseudo R – squared. 
+        </p>
+        <h2> III. RESULTS & DISCUSSION </h2>
+        <h3> 1. Result </h3>
+        <h4> 1.1 Kernel Density Estimation (KDE) </h4>
+        <figure class="image-plain">
+            <img
+              src="{{ url_for('static', filename='image/geospatial_crash_project/KDE_Estimation.png') }}"
+              alt="Kernel Density Estimation"
+              loading="lazy" decoding="async">
+            <figcaption>Figure 6: Kernel Density Estimation Crash in Wellington</figcaption>
+        </figure>
+        <p style = "text-align: justify;">
+            The KDE maps above show the density distribution of crashes across wellington city for each of the 3 different crash types. 
+            For All three crash types we see the highest density of crashes is occurring in the city centre.
+        </p>
+        <h4> 1.2 Spatial Autocorrelation </h4>
+        <h5> 1.2.1 Global Moran's I </h5>
+        <figure class="image-card">
+            <img
+              src="{{ url_for('static', filename='image/geospatial_crash_project/crash_density_moranI.png') }}"
+              alt="Crash Density Morans'I"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+            >
+            <figcaption>Figure 7: Crash Density Visualization with Global Moran’s I with weighting method KNN w/ K = 5</figcaption>
+        </figure>
+        <p style = "text-align: justify;">
+            The Global Moran’s I test determines if there is spatial autocorrelation present in the crash data across wellington city. The map 
+            show here highlights the density of crashes seen across Wellington city for the entire data sets and what areas might see more 
+            clustering. 
+        </p>
+        <h5> 1.2.2 Local Moran's I</h5>
+        <p style = "text-align: justify;">
+            Local Moran’s I was used to identify the specific locations of hot and cold spots of crashes for minor, fatal and serious, as well 
+            as non-injury crashes. Within a dataset, local Moran's I aid in locating hotspots and cold spots or clusters of high and low values. 
+            We did this process after assessing the global metrics of the entire crash dataset with Global Moran's I. The Maps above highlight 
+            the hot and cold spots and specific local clusters for each crash type. Below, we removed non-significant crash points to better see 
+            the high and low clusters. The weighting method used above was K Nearest Neighbor with the K value or number of neighbors set to 5. 
+            The K values choice of 5 was utilized in this weighting method to focus on Local hotspots of crashes without hotspots becoming to 
+            generalized or determined by small scale changes in crash density. Studies have highlighted the importance of this variable selection 
+            as the findings are strongly impacted by the choice of KNN that differs by several units (Kubara & Kopczewska, 2024). For the context 
+            of our study using a smaller number is preferable as we want to focus on smaller hotspot areas of crashes within Wellington. The KNN 
+            method has been used in other studies and was determined as a viable weighting method especially for road crash 
+            incident analysis (Sahu et al., 2023).
+        </p>
+        <figure class="image-card-wide">
+            <div class="image-column">
+              <img src="{{ url_for('static', filename='image/geospatial_crash_project/crash_cluster_2.png') }}"
+                   alt="Crash Clustering Patterns - Local Moran's I (Top Row)"
+                   loading="lazy" decoding="async">
+              <img src="{{ url_for('static', filename='image/geospatial_crash_project/crash_cluster_3.png') }}"
+                   alt="Crash Clustering Patterns - Local Moran's I (Bottom Row)"
+                   loading="lazy" decoding="async">
+            </div>
+            <figcaption>
+              Figure 6: Crash clustering patterns using Local Moran’s I for Minor Crashes, Non-Injury Crashes, and Fatal-Serious crashes
+            </figcaption>
+        </figure>
+        <h4> 1.3 Classification Model </h4>
+        <p style = "text-align: justify;">
+            In the exploratory data analysis, we found that the intersection variable contained all missing values. So it’s removed in the 
+            model stage. Furthermore, since six out of the seven variables are categorical, we examined the distribution of these variables 
+            and their relationships with the dependent variable, as shown in Table 1 below:
+        </p>
+        <div class="table-container-1">
+            <table class="styled-table-1">
+              <thead>
+                <tr>
+                  <th>Variable</th>
+                  <th>% Non-injury</th>
+                  <th>% Severity</th>
+                  <th>Total Cases</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Flat Hill -->
+                <tr class="section-row"><td colspan="4">Flat Hill</td></tr>
+                <tr>
+                  <td><strong>Flat</strong></td>
+                  <td class="num">78.87</td>
+                  <td class="num">21.13</td>
+                  <td class="num">1874</td>
+                </tr>
+                <tr>
+                  <td><strong>Hill Road</strong></td>
+                  <td class="num">78.64</td>
+                  <td class="num">21.36</td>
+                  <td class="num">885</td>
+                </tr>
+                <tr>
+                  <td><strong>Unknown</strong></td>
+                  <td class="num">97.85</td>
+                  <td class="num">2.15</td>
+                  <td class="num">186</td>
+                </tr>
+          
+                <!-- Light -->
+                <tr class="section-row"><td colspan="4">Light</td></tr>
+                <tr>
+                  <td><strong>Bright sun</strong></td>
+                  <td class="num">75.48</td>
+                  <td class="num">24.52</td>
+                  <td class="num">987</td>
+                </tr>
+                <tr>
+                  <td><strong>Dark</strong></td>
+                  <td class="num">77.63</td>
+                  <td class="num">22.37</td>
+                  <td class="num">769</td>
+                </tr>
+                <tr>
+                  <td><strong>Overcast</strong></td>
+                  <td class="num">81.33</td>
+                  <td class="num">18.67</td>
+                  <td class="num">782</td>
+                </tr>
+                <tr>
+                  <td><strong>Twilight</strong></td>
+                  <td class="num">81.17</td>
+                  <td class="num">18.83</td>
+                  <td class="num">154</td>
+                </tr>
+                <tr>
+                  <td><strong>Unknown</strong></td>
+                  <td class="num">100</td>
+                  <td class="num">0</td>
+                  <td class="num">253</td>
+                </tr>
+          
+                <!-- Road Surface -->
+                <tr class="section-row"><td colspan="4">Road Surface</td></tr>
+                <tr>
+                  <td><strong>Sealed</strong></td>
+                  <td class="num">79.79</td>
+                  <td class="num">20.21</td>
+                  <td class="num">2895</td>
+                </tr>
+                <tr>
+                  <td><strong>Unsealed</strong></td>
+                  <td class="num">60</td>
+                  <td class="num">40</td>
+                  <td class="num">10</td>
+                </tr>
+                <tr>
+                  <td><strong>Unknown</strong></td>
+                  <td class="num">100</td>
+                  <td class="num">0</td>
+                  <td class="num">40</td>
+                </tr>
+          
+                <!-- Speed Limit -->
+                <tr class="section-row"><td colspan="4">Speed Limit</td></tr>
+                <tr>
+                  <td><strong>Low (≤30 km/h)</strong></td>
+                  <td class="num">73.25</td>
+                  <td class="num">26.75</td>
+                  <td class="num">228</td>
+                </tr>
+                <tr>
+                  <td><strong>Mid (40–50 km/h)</strong></td>
+                  <td class="num">81.13</td>
+                  <td class="num">18.87</td>
+                  <td class="num">2109</td>
+                </tr>
+                <tr>
+                  <td><strong>Mid-high (60–80 km/h)</strong></td>
+                  <td class="num">75.88</td>
+                  <td class="num">24.12</td>
+                  <td class="num">228</td>
+                </tr>
+                <tr>
+                  <td><strong>High (&gt;80 km/h)</strong></td>
+                  <td class="num">79.72</td>
+                  <td class="num">20.28</td>
+                  <td class="num">355</td>
+                </tr>
+                <tr>
+                  <td><strong>Unknown</strong></td>
+                  <td class="num">88</td>
+                  <td class="num">12</td>
+                  <td class="num">25</td>
+                </tr>
+          
+                <!-- Weather A -->
+                <tr class="section-row"><td colspan="4">Weather A</td></tr>
+                <tr>
+                  <td><strong>Fine</strong></td>
+                  <td class="num">76.19</td>
+                  <td class="num">23.81</td>
+                  <td class="num">2100</td>
+                </tr>
+                <tr>
+                  <td><strong>Hail or Sleet</strong></td>
+                  <td class="num">100</td>
+                  <td class="num">0</td>
+                  <td class="num">1</td>
+                </tr>
+                <tr>
+                  <td><strong>Heavy rain</strong></td>
+                  <td class="num">77.53</td>
+                  <td class="num">22.47</td>
+                  <td class="num">89</td>
+                </tr>
+                <tr>
+                  <td><strong>Light rain</strong></td>
+                  <td class="num">83.65</td>
+                  <td class="num">16.35</td>
+                  <td class="num">373</td>
+                </tr>
+                <tr>
+                  <td><strong>Mist or Fog</strong></td>
+                  <td class="num">73.33</td>
+                  <td class="num">26.67</td>
+                  <td class="num">15</td>
+                </tr>
+                <tr>
+                  <td><strong>Unknown</strong></td>
+                  <td class="num">98.91</td>
+                  <td class="num">1.09</td>
+                  <td class="num">367</td>
+                </tr>
+          
+                <!-- Weather B -->
+                <tr class="section-row"><td colspan="4">Weather B</td></tr>
+                <tr>
+                  <td><strong>Frost</strong></td>
+                  <td class="num">58.82</td>
+                  <td class="num">41.18</td>
+                  <td class="num">17</td>
+                </tr>
+                <tr>
+                  <td><strong>Strong wind</strong></td>
+                  <td class="num">69.7</td>
+                  <td class="num">30.3</td>
+                  <td class="num">132</td>
+                </tr>
+                <tr>
+                  <td><strong>Unknown</strong></td>
+                  <td class="num">80.62</td>
+                  <td class="num">19.38</td>
+                  <td class="num">2796</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="table-title-1">Table 03. Descriptive statistics of Category Feature in LR model</div>
+        </div>
+        <p style="text-align: justify;">
+            The results of the logistic regression model are shown in Table 2 below. We transformed the categorical features into one-hot 
+            encoded variables by using dummy variables. The Pseudo R² is 0.1148, and the AUROC is 0.64. We report Nagelkerke R² because it 
+            is commonly used in logistic regression outputs and is conceptually similar to the R² in linear regression while it’s generally 
+            lower than R² in linear regression. Among the categorical variables, "light," "speed limit," "weather A," and "weather B" have 
+            significant coefficients compared to their default value. Additionally, the only continuous variable "distance to store (km)" also 
+            has a significant coefficient. 
+        </p>  
+        <div class="table-container">
+            <div class="table-title">Table 04. Performance Metrics and Coefficients of LR Model</div>
+          
+            <table class="styled-table">
+              <!-- Section: Model Performance -->
+              <tbody>
+                <tr class="section-row"><td colspan="4">Model Performance</td></tr>
+                <tr>
+                  <td><strong>Nagelkerke R2</strong></td>
+                  <td class="num" colspan="3">0.1148</td>
+                </tr>
+                <tr>
+                  <td><strong>AUROC</strong></td>
+                  <td class="num" colspan="3">0.64</td>
+                </tr>
+              </tbody>
+          
+              <!-- Coefficients header -->
+              <thead>
+                <tr>
+                  <th>Variables</th>
+                  <th>Coef</th>
+                  <th>P&gt;|z|</th>
+                  <th>Significant</th>
+                </tr>
+              </thead>
+          
+              <!-- Coefficients body -->
+              <tbody>
+                <tr>
+                  <td><strong>Constant</strong></td>
+                  <td class="num">-0.0141</td>
+                  <td class="num">0.986</td>
+                  <td class="num">No</td>
+                </tr>
+          
+                <tr><td><strong>FlatHill_HillRoad</strong></td><td class="num">0.0274</td><td class="num">0.816</td><td class="num">No</td></tr>
+                <tr><td><strong>FlatHill_Unknown</strong></td><td class="num">-0.776</td><td class="num">0.15</td><td class="num">No</td></tr>
+          
+                <tr><td><strong>Light_Dark</strong></td><td class="num">-0.1417</td><td class="num">0.298</td><td class="num">No</td></tr>
+                <tr><td><strong>Light_Overcast</strong></td><td class="num">-0.3575</td><td class="num">0.011</td><td class="num">Yes</td></tr>
+                <tr><td><strong>Light_Twilight</strong></td><td class="num">-0.279</td><td class="num">0.24</td><td class="num">No</td></tr>
+                <tr><td><strong>Light_Unknown</strong></td><td class="num">-69.1711</td><td class="num">1</td><td class="num">No</td></tr>
+          
+                <tr><td><strong>RoadSurface_Sealed</strong></td><td class="num">-0.5682</td><td class="num">0.462</td><td class="num">No</td></tr>
+                <tr><td><strong>RoadSurface_Unknown</strong></td><td class="num">-6.9568</td><td class="num">1</td><td class="num">No</td></tr>
+          
+                <tr><td><strong>SpeedLimit_High</strong></td><td class="num">-1.1548</td><td class="num">0</td><td class="num">Yes</td></tr>
+                <tr><td><strong>SpeedLimit_Mid</strong></td><td class="num">-0.7317</td><td class="num">0</td><td class="num">Yes</td></tr>
+                <tr><td><strong>SpeedLimit_MidHigh</strong></td><td class="num">-0.6896</td><td class="num">0.009</td><td class="num">Yes</td></tr>
+                <tr><td><strong>SpeedLimit_Unknown</strong></td><td class="num">0.0677</td><td class="num">0.931</td><td class="num">No</td></tr>
+          
+                <tr><td><strong>WeatherA_HailorSleet</strong></td><td class="num">-12.3014</td><td class="num">0.991</td><td class="num">No</td></tr>
+                <tr><td><strong>WeatherA_HeavyRain</strong></td><td class="num">-0.1695</td><td class="num">0.59</td><td class="num">No</td></tr>
+                <tr><td><strong>WeatherA_LightRain</strong></td><td class="num">-0.3013</td><td class="num">0.084</td><td class="num">No</td></tr>
+                <tr><td><strong>WeatherA_MistorFog</strong></td><td class="num">0.5141</td><td class="num">0.4</td><td class="num">No</td></tr>
+                <tr><td><strong>WeatherA_Unknown</strong></td><td class="num">-2.131</td><td class="num">0</td><td class="num">Yes</td></tr>
+          
+                <tr><td><strong>WeatherB_Frost</strong></td><td class="num">0.8809</td><td class="num">0.103</td><td class="num">No</td></tr>
+                <tr><td><strong>WeatherB_StrongWind</strong></td><td class="num">0.493</td><td class="num">0.031</td><td class="num">Yes</td></tr>
+          
+                <tr><td><strong>Distance_to_Store (km)</strong></td><td class="num">0.1529</td><td class="num">0.001</td><td class="num">Yes</td></tr>
+              </tbody>
+            </table>
+        </div>
+        <h3> 2. DISCUSSION </h3>
+        <h4> 2.1 Kernel Density Estimation (KDE) </h4>
+        <p style = "text-align: justify;">
+            When looking at the KDE maps in Figure 6 all three crash types saw the highest density of crashes in the center city. This is 
+            especially true for minor and non-injury crashes. Fatal crashes have a notably lower density in the city center when compared 
+            to the other minor and non-injury crashes. We also see a main road and highway segments have smaller hotspots of crashes along 
+            them for all three crash types. The KDE maps above give us an overall view of the distribution of crashes for each type before 
+            we do further statistical analysis. 
+        </p>
+        <h4> 2.2 Global Moran's I </h4>
+        <p style = "text-align: justify;">
+            When looking at the amp above in Figure 7 the test produces a Global Moran’s I result of 0.9784 (4DP) which means that the data 
+            indicates strong positive spatial autocorrelation. In terms of our data and investigation this means that we should see areas of 
+            high crash counts should be located next to other areas of high crash counts. The test also obtained a Z score of 185.73 which is 
+            very high. This indicates that level of clustering seen is very significant and is much higher than we would expect to see under 
+            random conditions. The Z score is large enough to say that there is very strong evidence of clustering within the data. 
+        </p>
+        <h4> 2.3 Local Moran's I </h4>
+        <p style = "text-align: justify;">
+            When looking at the clustering results from LISA maps above in Figure 8 we can see a few key differences in the clustering for 
+            each crash type. Non-injury crashes had the widest dispersion of high-high clusters. Minor crashes had significant high-high 
+            clusters almost exclusively within the center city. Fatal and serious crashes had high-high and a handful of low-low clusters 
+            outside of the main CBD area. It is important to note that we do not see outlier clusters (Low-High and High-Low) for several 
+            reasons. Firstly, we saw a very strong P value during the Global Moran’s I am meaning that the data has very strong spatial 
+            autocorrelation of the crash points. These HL and LH cluster may not exist at the specified threshold set for the LISA clusters. 
+            Additionally, because the crash data points were abundant in terms of sample size we may see a large amount of spatial 
+            heterogeneity in the data. These spatial cluster we see do align with the density cluster fund in KDE earlier in the spatial 
+            analysis process. 
+        </p>
+        <h4> 2.4 Logistic Regression Model </h4>
+        <p style = "text-align: justify;">
+            The Pseudo R² value of 0.1148 shows approximately 11.5% of the variation in dependent variable (crash severity) is explained by 
+            the model. In logistic regression, a Pseudo R² below 0.2 is usually considered a weak explanation of dependent variable. 
+            Therefore, our model shows limited explanatory power. Compared to a similar study on bike crash severity in Christchurch, 
+            which has Pseudo R² values ranging from 0.3 to 0.6, our model's performance is relatively poor. This suggests that the variables 
+            included in our model may not be the primary factors influencing crash severity. Additionally, the AUROC for the test data is 0.64 
+            which means the model has limited ability to distinguish between classes. Normally, closer to 0.5 is regarded as the same as 
+            random classification, while above 0.7 is usually considered as acceptable model performance.
+        </p>
+        <p style = "text-align: justify;">
+            Even though the model doesn’t have a good performance in prediction level, our primary focus is on understanding the significance 
+            and direction of the influence of selected variables on crash severity. Based on the model summary, we could say that compared to 
+            bright sunlight, overcast conditions would decrease the likelihood of a serious crash. Compared to 30 km/h or below, mid or 
+            high-speed limits would increase the likelihood of serious crashes. As for weather conditions, rainy, misty, or foggy weather 
+            does not significantly increase the likelihood of serious crashes compared to the clear weather. On the other hand, strong winds 
+            weather compared to unknown wind or frost weather would increase likelihood of serious crashes which might worth noticing since 
+            the Wellington city is quite windy. Additionally, when car crash location’s distance from a liquor store increases, the likelihood 
+            of a serious crash also increases. 
+        </p>
+        <h4> 2.5 Unsual Correlation </h4>
+        <p style = "text-align: justify;">
+            There are a few unusual correlations between serious crashes and spatial factors in our model. One unexpected result is the 
+            significant negative relationship between mid and high-speed limits and serious crashes. This suggests that roads with higher 
+            speed limits are associated with fewer serious crashes. This means that the low-speed limit (30 km/h or below) is usually found 
+            in specific scenario like roadwork zones. A possible explanation could be that there aren’t enough clear signs for drivers to 
+            slow down or drivers are careless with the sign and fail to slow down accordingly in these areas.
+        </p>
+        <p style = "text-align: justify;">
+            Another surprising finding is that the distance to liquor stores has a positive significant relationship with serious crashes, 
+            meaning that crashes are more likely to be serious when they occur farther from a liquor store. This may be due to a limitation 
+            in our data source since we only collected data from 14 liquor stores in Wellington, most of which are in the central business 
+            district (CBD). If crashes are more likely to be more serious in the highway which are more likely to be away from CBD, this could 
+            explain the positive relationship between distance to liquor stores and crash severity.
+        </p>
+        <h4> 2.6 Spatial Autocorrelation Detection </h4>
+        <p style = "text-align: justify;">
+            Since in the hotspot analysis showed significant spatial autocorrelation, it's important to check whether this violates the 
+            assumption of no spatial autocorrelation in our logistic regression model. Some variables might not be significant at the global 
+            level, but it might not be the same in local level. So we need to assess whether the residuals are spatially autocorrelated. 
+            This would help us decide whether we should use a geographically weighted logistic regression (GWLR) for local-level analysis. 
+            Since we are working with logistic regression instead of linear regression, we used deviance residuals which measure the difference 
+            between the predicted probabilities and the actual outcomes with penalty in difference. To avoid bias from the random splitting of 
+            data, we re-ran the model on the entire dataset to ensure the spatial location of observations is fully considered. To check for 
+            spatial autocorrelation, we used the k-nearest neighbors (KNN) method to calculate Moran’s I for the deviance residuals. Because 
+            the choice of k can influence the results of Moran I, we tested a range of k-values from 5 to 30. The Moran’s I values are shown 
+            in the figure below. Although all Moran’s I values are statistically significant at the 0.05 level, the strength of autocorrelation 
+            is very weak across all k-values. Since the spatial autocorrelation is weak, we can conclude that the significance of the model's 
+            coefficients is not due to spatial autocorrelation. As a result, it suggests that a geographically weighted model is not necessary 
+            here.
+        </p>
+        <figure class="image-card">
+            <img
+              src="{{ url_for('static', filename='image/geospatial_crash_project/Morans I_Different_K_Values.png') }}"
+              alt="Moran's I For Deviance Residuals with Different K Values"
+              loading="lazy"
+              decoding="async"
+              style="aspect-ratio: 16/9; object-fit: contain;"
+            >
+            <figcaption>Figure 9: Moran's I For Deviance Residuals with Different K Values</figcaption>
+        </figure>
+        <h2> IV. LIMITATIONS AND FUTURE WORK </h2>
+        <h3> 1. Limitations </h3>
+        <p style = "text-align: justify;">
+            A main limitation is that some key variables that are likely to be important in predicting the severity of crashes were not 
+            included. For instance, intersections are a very critical factor concerning severe crashes. However, the intersections column 
+            in the car crash dataset is missing. We looked for alternative data about intersections, but none was available, and due to the 
+            limit of time we couldn’t create accurate version by ourselves. Similarly, we had don’t have the type of road data which is 
+            important road features in car crash. Even though some information was found from NZTA showing the hierarchy of the roads, there 
+            aren’t geometry data available. Spatial variables distance to liquor store for our model may not be accurate defined since most 
+            of the liquor stores are in the CBD and this could have a biased outcome because it might not be representative of the rural area. 
+            The downsampling method could also introduce bias since downsampling doesn't consider the spatial distribution of the crashes, 
+            it may distort the location distribution. Besides, it should have been comparison between sampled and whole dataset to see if such 
+            an effect exists. 
+        </p>
+        <h3> 2. Future Work </h3>
+        <p style = "text-align: justify;">
+            Even though our analysis target is to understand if the selected feature is significant in influencing the severity of car crash, 
+            further work could still focus on finding key factors that explain more of the variant of serious crashes for policy advice and 
+            improve the model performance like Pseudo R². For example, including key factors like intersection and road type data might help 
+            explain the variation in crash severity as they are significant factors in another research. Furthermore, we could explore and 
+            include more variables like “distance to liquor store” that might help better capture the relationship between drunk driving and 
+            crash severity.
+        </p>
+        <h2> V. CONCLUSION </h2>
+        <p style = "text-align: justify;">
+        In conclusion, the analysis revealed significant spatial autocorrelation in road traffic accidents within Wellington which 
+        highlighting hotspot areas in the city center. Several factors such as weather conditions, speed limits, and distance to liquor 
+        stores were found to influence crash severity though the logistic regression model While the model provided insights into key factors 
+        affecting crash severity, further development might need to improve model accuracy such as including additional variables like 
+        intersections and road types.
+        </p>
+        <p style="text-align: center; font-size: 24px; font-weight: bold;">
+            THANK YOU FOR READING!
+        </p>
+    </section>
+    <section>
+        <div class="references-container"></div>
+            <h2> REFERENCES </h2>
+            <ol class="references-list">
+                <li>WHO, 2000. World Health Organisation Report 1999. World Health Organisation, Geneva.</li>
+                <li>International Transport Forum (ITF). (2023). Road Safety Country Profiles New Zealand 2023.</li>
+                <li>Austroads. (2003). Austroads Guide to Traffic Engineering Practice. Part 4. Treatment of Crash Locations. <a href="https://www.nzta.govt.nz/assets/resources/guide-to-treatment-of-crash-location/docs/definitions.pdf" target="_blank">https://www.nzta.govt.nz/assets/resources/guide-to-treatment-of-crash-location/docs/definitions.pdf</a></li>
+                <li>Wang, K., Zhang, W., Jin, L., Feng, Z., Zhu, D., Cong, H., & Yu, H. (2021). Diagnostic analysis of environmental factors affecting the severity of traffic crashes: From the perspective of pedestrian–vehicle and vehicle–vehicle collisions. <em>Traffic Injury Prevention</em>, 23(1), 17–22. <a href="https://doi.org/10.1080/15389588.2021.1995602" target="_blank">https://doi.org/10.1080/15389588.2021.1995602</a></li>
+                <li>Moskowitz, H., Burns, M. and Williams, A. F. Skills performance at low blood alcohol levels. <em>Journal of Studies on Alcohol</em>, 46, 482-485, 1985.</li>
+                <li>West, R.; Wilding, J.; French, D.; Kemp, R.; Irving, A. Effect of low and moderate doses of alcohol on driving hazard perception latency and driving speed. <em>Addiction</em>, 88, 527-532, 1993.</li>
+                <li>Heeren, T.; Smith, R. A.; Moorlock, S.; Hingson, R. W. Surrogate measures of alcohol involvement in fatal crashes: Are conventional indicators adequate? <em>Journal of Safety Research</em>, 16, 127-134; 1985.</li>
+                <li>Ostrom, M.; Eriksson, A. Single-vehicle crashes and alcohol: A retrospective study of passenger car fatalities in northern Sweden. <em>Accident Analysis and Prevention</em>, 25, 171-176; 1993.</li>
+                <li>Matkan, A. A., Mohaymany, A. S., Shahri, M., & Mirbagheri, B. (2013). Detecting the spatial-temporal autocorrelation among crash frequencies in urban areas. <em>Canadian Journal of Civil Engineering</em>, 40(3), 195-203.</li>
+                <li>Trevor C. Bailey and Anthony C. Gatrell. Essex, England: Longman Scientific & Technical, 1995. xiv, 413 pp. ISBN 0582-24493-5.</li>
+                <li>Silverman, B. W. (1986). Density estimation for statistics and data analysis. London: Chapman Hall.</li>
+                <li>Hashimoto, S., Yoshiki, S., Saeki, R., Mimura, Y., Ando, R., & Nanba, S. (2016). Development and application of traffic accident density estimation models using kernel density estimation. <em>Journal of Traffic and Transportation Engineering</em> (English edition), 3(3), 262-270.</li>
+                <li>Edwards, J. B. (1998). The relationship between road accident severity and recorded weather. <em>Journal of Safety Research</em>, 29(4), 249-262.</li>
+                <li>Bazzanaa, F., Borsatia, M., & Cascaranoa, M. The role of average speed enforcement systems in preventing highway accidents: evidence from Italy.</li>
+                <li>Jackett, M., & Frith, W. (2013). Quantifying the impact of road lighting on road safety—A New Zealand Study. <em>IATSS Research</em>, 36(2), 139-145.</li>
+                <li>Lee, J., Nam, B., & Abdel-Aty, M. (2015). Effects of pavement surface conditions on traffic crash severity. <em>Journal of Transportation Engineering</em>, 141(10), 04015020.</li>
+                <li>Hosseinpour, M., Yahaya, A. S., & Sadullah, A. F. (2014). Exploring the effects of roadway characteristics on the frequency and severity of head-on crashes: Case studies from Malaysian Federal Roads. <em>Accident Analysis & Prevention</em>, 62, 209-222.</li>
+                <li>GRUENEWALD, P. J., & PONICKI, W. R. (1995). THE RELATIONSHIP OF <em>Accident Analysis and Prevention</em>, 21(2), 249-259.</li>
+                <li>Williams, T., Doscher, C., & Page, S. (2018). Spatial characteristics of bicycle–motor vehicle crashes in Christchurch, New Zealand. <em>Journal of Transport and Land Use</em>, 11(1), 849-864.</li>
+                <li>Sahu, S., Maram, B., Gampala, V., & Daniya, T. (2023). Analysis of Road Accidents Prediction and Interpretation Using KNN Classification Model (Vol. 490). Springer Nature Singapore. <a href="https://doi.org/10.1007/978-981-19-4052-1_18" target="_blank">https://doi.org/10.1007/978-981-19-4052-1_18</a></li>
+                <li>Kubara, M., & Kopczewska, K. (2024). Akaike information criterion in choosing the optimal k-nearest neighbours of the spatial weight matrix. <em>Spatial Economic Analysis</em>, 19(1), 73–91. <a href="https://doi.org/10.1080/17421772.2023.2176539" target="_blank">https://doi.org/10.1080/17421772.2023.2176539</a></li>
+            </ol>
+        </div>
+    </body>
+</html>
+<footer>
+    <p style="text-align: center;"> © 2024 Geospatial Crash Analysis Project </p>
+    

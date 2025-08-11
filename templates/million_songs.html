@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Million Songs Dataset Project</title>
+    <link rel="stylesheet" href="/static/style_million_songs.css">
+     <!-- ✅ Add this style block here -->
+     <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 80px auto 0; /* top padding for fixed navbar */
+            padding: 40px 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        section {
+            margin-bottom: 50px;
+        }
+    </style>
+</head>
+<body class ="body" >
+    {% include "navigate_bar.html" %}
+    <h1 style="text-align: center;">
+        &#127926; Million Songs Dataset Project with PySpark &#127932;
+    </h1>
+    <div class="author-info">
+        <p><strong>Author:</strong> Dario Dang<br>
+           <strong>Date:</strong> October 25, 2024<br>
+            <a href="https://github.com/DarioDang/msd-audio-recommendation" target="_blank">Code File</a>
+        </p>
+    </div>
+    <section>
+        <h2>Background</h2>
+        <p style="text-align: justify;">
+            The Million Song Dataset (MSD) is a comprehensive collection of data designed to foster music information
+            retrieval research. Created by The Echo Nest and LabROSA, the dataset provides metadata and detailed
+            audio features for one million songs, including song ID, track ID, artist ID, and various audio properties.
+            Additionally, the dataset integrates user-song play counts and genre annotations from several sources. In
+            this assignment we will focuses on exploring audio features and collaborative filtering to build classification
+            models and song recommendation systems.</p>
+    </section>
+
+    <section>
+        <h2>PART I: PROCESSING</h2>
+        <h3>1. Structure of MSD dataset</h3>
+        <p style="text-align: justify;">
+            The Million Song Dataset was stored in the Hadoop Distributed File System (HDFS). The datasets are
+            organized into various directories such as “Audio”, “Genre”, “Main”, “Tasteprofile”. Each of the directories
+            contains multiple files as detailed in the directory tree (Appendix A). The table below provide the information
+            on the file sizes, format, data type and number of rows for each dataset.</p>
+            <div class="table-container">  
+              <table class="styled-table">
+                <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                    Table 1. Data structure of MSD dataset
+                  </caption>
+                <thead>
+                  <tr>
+                    <th>Directory</th>
+                    <th>Actual size</th>
+                    <th>Replicate size</th>
+                    <th>Actual size (in GB)</th>
+                    <th>Number of rows</th>
+                    <th>Data Type</th>
+                    <th>Percentage of sizes</th>
+                    <th>Percentage of Rows</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Audio</td>
+                    <td>12.3&nbsp;GB</td>
+                    <td>98.1 GB</td>
+                    <td>12.3</td>
+                    <td>13,924,662</td>
+                    <td>String</td>
+                    <td>21.28%</td>
+                    <td>21.28%</td>
+                  </tr>
+                  <tr>
+                    <td><em>Attributes</em></td>
+                    <td>103.0 KB</td>
+                    <td>824.3 KB</td>
+                    <td>0.000103</td>
+                    <td>3,929</td>
+                    <td>String</td>
+                    <td>0.01%</td>
+                    <td>0.01%</td>
+                  </tr>
+                  <tr>
+                    <td><em>Features</em></td>
+                    <td>12.2 GB</td>
+                    <td>97.8 GB</td>
+                    <td>12.2</td>
+                    <td>12,927,867</td>
+                    <td>String/Numeric</td>
+                    <td>94.65%</td>
+                    <td>19.80%</td>
+                  </tr>
+                  <tr>
+                    <td><em>Statistics</em></td>
+                    <td>40.3 MB</td>
+                    <td>322.1 MB</td>
+                    <td>0.0403</td>
+                    <td>992,866</td>
+                    <td>String/Numeric</td>
+                    <td>1.52%</td>
+                    <td>1.52%</td>
+                  </tr>
+                  <tr>
+                    <td>Genre</td>
+                    <td>30.1 MB</td>
+                    <td>241.0 MB</td>
+                    <td>0.0301</td>
+                    <td>1,103,077</td>
+                    <td>String</td>
+                    <td>0.23%</td>
+                    <td><strong>1.69%</strong></td>
+                  </tr>
+                  <tr>
+                    <td>Main</td>
+                    <td>174.4&nbsp;MB</td>
+                    <td>1.4 GB</td>
+                    <td>0.1744</td>
+                    <td>2,000,002</td>
+                    <td>String/Numeric</td>
+                    <td>1.35%</td>
+                    <td><strong>3.06%</strong></td>
+                  </tr>
+                  <tr>
+                    <td>Summary</td>
+                    <td>174.4 MB</td>
+                    <td>1.4 GB</td>
+                    <td>0.1744</td>
+                    <td>2,000,002</td>
+                    <td>String/Numeric</td>
+                    <td>1.35%</td>
+                    <td>3.06%</td>
+                  </tr>
+                  <tr>
+                    <td>Tasteprofile</td>
+                    <td>490.4 MB</td>
+                    <td>3.8 GB</td>
+                    <td>0.4904</td>
+                    <td>48,393,618</td>
+                    <td>String/Numeric</td>
+                    <td>3.8%</td>
+                    <td><strong>73.97%</strong></td>
+                  </tr>
+                  <tr>
+                    <td><em>Mismatches</em></td>
+                    <td>2.0 MB</td>
+                    <td>16.2 MB</td>
+                    <td>0.002</td>
+                    <td>20,032</td>
+                    <td>String</td>
+                    <td>0.03%</td>
+                    <td>0.03%</td>
+                  </tr>
+                  <tr>
+                    <td><em>Triplets.tsv</em></td>
+                    <td>488.4 MB </td>
+                    <td>3.8 GB</td>
+                    <td>0.4884</td>
+                    <td>48,373,586</td>
+                    <td>String/Numeric</td>
+                    <td>3.8%</td>
+                    <td><strong>73.94%</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+        <p style="text-align: justify;">
+            The overall size of the MSD dataset is 12.9 GB, which accounts for the actual size of the data in the dataset,
+            while 103.5 GB accounts for the replication across HDFS. To give a better overview over the differences of
+            datasets, sizes were converted into consistent units and their percentages were calculated. According to the
+            table above, "Audio" is the biggest share in the dataset, accounting for 94.65%, while the "Tasteprofile
+            dataset" shares 3.8% of the total size. About "Audio" there are three subdirectories: "Attributes", "Features",
+            and "Statistics”, the data stored in all the files from "Attributes" and "Statistics" consists of strings in CSV
+            format, while "Features" contains both string and numeric data, compressed in CSV.gz format. Finally, the
+            "Tasteprofile" directory is divided into "Mismatches," consisting of string data in two text files, and
+            "Triplets.tsv," containing string and numeric data in TSV format with eight compressed files. Furthermore, the
+            "Genre" directory has three TSVs of string type while the "Summary" subdirectory inside "Main" contains two
+            CSV files compressed with both numeric and string data each.</p>  
+
+        <h3>2. Number of rows in each dataset</h3>
+        <p style="text-align: justify;">
+            Before counting the rows for each file in the dataset, several compressed files had to be decompressed using
+            the “gunzip” command in HDFS. Based on table 1, the “Tasteprofile” directory have the highest number of
+            rows at 48,393,618 accounts for 73.97% of the total rows over MSD dataset. Following by the “Audio”
+            directory which contain 13,924,662 accounts for 21.28%. Other directory has less than 10% of rows
+            contribute to the overall. Since this is the million-song dataset, we expect there should be the million rows for
+            each feature dataset, however, all of the feature dataset is slightly less than 1 million. Therefore, if we want
+            to perform the join to get the genre label this will get smaller than million songs as the genre count larger than
+            the song count in a particular feature dataset.</p>
+        
+        <h3>3. A brief summary of the information contained in audio attributes datasets</h3>
+        <p style="text-align: justify;">
+            The audio attributes datasets contain metadata which describe the structure of the audio features, this has
+            two columns, the first column represent the name of feature data and the second column corresponding their
+            data types. For example, the attribute names “Area_Method_of_Moment_1” are paired with the real data
+            which typically mapped to “DoubleType” in Spark. This metadata will be used for defining the schema to the
+            audio feature data. On the other hand, the audio feature dataset contains the actual audio data with rows 
+            represent different audio samples and there corresponding “track_id” at the end of each row. The feature
+            data needs a schema that will defines the structure for each column, which is where the information from the
+            attribute dataset comes into play. Keeping these two datasets separate we can maintain a clear distinction
+            between metadata and data which makes the loading and processing the audio features easier. Moreover,
+            metadata can be reused by feature datasets that contain the same type of attributes.</p>
+
+        <h3>4. Explanation of how to create the StructType automatically</h3>
+        <p style="text-align: justify;">
+            In order to create an automatically StructType, first, we define a dictionary called dict_type with mapping
+            attribute types such as real and string to their corresponding Spark SQL types which DoubleType and
+            StringType. By reading a specific dataset such as “msd-jmir-area-of-moments-all-v1.0”, we define a
+            “generate_schema” function to create a schema by iterating through a data frame of attribute names and
+            types. For each attribute, the function will look up the type in the dict_type that create above then it creates
+            a StructField. These fields are collected into a StructType which represent the schema of the feature dataset.
+            The attributes data was then loaded from HDFS which convert to a data frame and pass into the
+            “generate_schema” function, this will automatically map each attribute to its correct data type. By using this
+            schema, the feature dataset is loaded subsequently, and all columns are properly typed based on the attribute
+            descriptions.</p>
+        
+        <h3>5.Explanation of the convenient in audio features & attribute names to use as column names</h3>
+        <h4>5.1 The advantages and disadvantages of using these column names</h4>
+        <p style="text-align: justify;">
+            Since the column from the area of moment dataset that we have loaded above have a very long column
+            name (e.g. Area_Method_of_Moments_Overall_Standard_Deviation_1), it would be useful during the initial
+            exploration of the dataset as it offers transparency and make it easy for us to understand what each feature
+            represents without external documentation. However, we might find it difficult when using these columns
+            names to next steps such as training the model as we have to explore correlation between these columns
+            and doing some feature selection and visualization. Therefore, it would be easier to interpret and observe if
+            we rename these columns shorter and more compact, useful to discuss them when it comes to explanation
+            data analysis and training model.</p>
+        <h4>5.2 Explanation of how to rename columns in the audio feature datasets</h4>
+        <p style="text-align: justify;">
+            In order to make the column easy to interpret and visualize, we developed a systematic approach to rename
+            the columns in the audio feature dataset by mapping each dataset to a specific prefix and applying a
+            consistent naming convention. First, we defined a list of dataset names and mapped each one to a
+            corresponding prefix. For each dataset, we dynamically read both attributes and features files in HDFS and
+            pass them through the schema function (as discuss below). For the first 10 columns, we appended the prefix
+            followed by “std” and a sequential number as it indicates the standard deviation. For the next 10 columns,
+            we used the prefix followed by “avg” as it represents for the average. The columns start with "MSD_TRACKID”
+            and “track_id” will be keep the same as it considers as they serve as key columns for potential joins.</p>
+    </section>
+
+    <section>
+        <h2>PART II: AUDIO SIMILARITY</h2>
+        <h3>1. Summary of the specific audio features dataset you have chosen</h3>
+        <p style="text-align: justify;">
+            The 'area of moments' dataset extracts statistical moments from audio signals, treating them as a 2-
+            dimensional function, similar to how moments are used in image processing (Fujinaga, 1996). These
+            moments capture essential characteristics of the audio, such as texture and distribution patterns. Hence, we
+            chose this dataset because it provides a comprehensive summary of the signal's properties, which is
+            particularly useful for tasks like audio classification (Ajoodha et al., 2015). The AOM dataset contain 994,623
+            rows and 21 columns. The first 20 columns are numeric and represent statistical summaries of the audio
+            signal, with the first 10 columns capturing the standard deviation and the next 10 columns representing the
+            average. The final column, "MSD_TRACKID” is a string type that uniquely identifies each track. Since this
+            feature dataset have a long column name, in order to make it easy to interpret and visualize, we create a
+            systematic way to rename columns as below:</p>
+            <table class="styled-table">
+                <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                    Table 2. Prefix Method
+                  </caption> 
+                <thead>
+                    <tr>
+                        <th>Original column name</th>
+                        <th>Prefix column name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><em>Area_Method_of_Moments_Overall_Standard_Deviation</em></td>
+                        <td><em>AMM_std_1</em> to <em>AMM_std_10</em></td>
+                    </tr>
+                    <tr>
+                        <td><em>Area_Method_of_Moments_Overall_Average</em></td>
+                        <td><em>AMM_avg_1</em> to <em>AMM_avg_10</em></td>
+                    </tr>
+                </tbody>
+            </table>
+        <h3>2. Generate the descriptive statistics for each audio features</h3>
+        <h4>2.1 Descriptive statistics</h4>
+        <p style="text-align: justify;">
+            Before performing the descriptive statistics, it is important to check for missing values as they can affect the
+            accuracy of the results. By using the “isNull()” function, we found 19 missing values in columns “AMM_avg_3”
+            to “AMM_avg20”. Since this is a small portion of the overall data, we drop these rows to ensure a cleaner
+            analysis. Moreover, we also drop the "MSD_TRACKID” as it is the track id column which shown no meaning
+            in the descriptive statistics. The “describe()” function is used to perform a descriptive statistics and the result
+            had been converted to Pandas dataframe with transposed the feature into rows for easy observe as there
+            are too many columns.</p>
+            
+            <table class="styled-table">
+                <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                    Table 3. Descriptive Statistics
+                  </caption> 
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Count</th>
+                  <th>Mean</th>
+                  <th>Std Dev</th>
+                  <th>Min</th>
+                  <th>Max</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>AMM_std_1</td><td>994604</td><td>1.22892124</td><td>0.528240504</td><td>0</td><td>9.346</td></tr>
+                <tr><td>AMM_std_2</td><td>994604</td><td>5500.56839</td><td>2366.029717</td><td>0</td><td>46860</td></tr>
+                <tr><td>AMM_std_3</td><td>994604</td><td>33817.8867</td><td>18228.64684</td><td>0</td><td>699400</td></tr>
+                <tr><td>AMM_std_4</td><td>994604</td><td>1.28E+08</td><td>2.40E+08</td><td>0</td><td>7.86E+09</td></tr>
+                <tr><td>AMM_std_5</td><td>994604</td><td>7.83E+08</td><td>1.58E+09</td><td>0</td><td>8.12E+10</td></tr>
+                <tr><td>AMM_std_6</td><td>994604</td><td>5.25E+09</td><td>1.22E+10</td><td>0</td><td>1.45E+12</td></tr>
+                <tr><td>AMM_std_7</td><td>994604</td><td>7.77E+12</td><td>5.69E+13</td><td>0</td><td>2.43E+15</td></tr>
+                <tr><td>AMM_std_8</td><td>994604</td><td>7.04E+09</td><td>7.46E+11</td><td>0</td><td>7.46E+11</td></tr>
+                <tr><td>AMM_std_9</td><td>994604</td><td>4.72E+10</td><td>1.10E+11</td><td>0</td><td>1.31E+13</td></tr>
+                <tr><td>AMM_std_10</td><td>994604</td><td>2.32E+15</td><td>2.46E+16</td><td>0</td><td>5.82E+18</td></tr>
+                <tr><td>AMM_avg_1</td><td>994604</td><td>3.51675685</td><td>1.860093501</td><td>0</td><td>26.52</td></tr>
+                <tr><td>AMM_avg_2</td><td>994604</td><td>9476.01684</td><td>4088.523898</td><td>0</td><td>81350</td></tr>
+                <tr><td>AMM_avg_3</td><td>994604</td><td>58331.7023</td><td>31372.66477</td><td>0</td><td>1003000</td></tr>
+                <tr><td>AMM_avg_4</td><td>994604</td><td>-1.42E+08</td><td>2.67E+08</td><td>-8.80E+09</td><td>0</td></tr>
+                <tr><td>AMM_avg_5</td><td>994604</td><td>-8.73E+08</td><td>1.76E+09</td><td>-9.01E+10</td><td>0</td></tr>
+                <tr><td>AMM_avg_6</td><td>994604</td><td>-5.86E+09</td><td>1.36E+10</td><td>-1.50E+12</td><td>0</td></tr>
+                <tr><td>AMM_avg_7</td><td>994604</td><td>6.84E+12</td><td>1.22E+11</td><td>0</td><td>2.14E+15</td></tr>
+                <tr><td>AMM_avg_8</td><td>994604</td><td>7.83E+09</td><td>1.58E+10</td><td>0</td><td>8.34E+11</td></tr>
+                <tr><td>AMM_avg_9</td><td>994604</td><td>5.26E+11</td><td>1.22E+11</td><td>0</td><td>1.35E+13</td></tr>
+                <tr><td>AMM_avg_10</td><td>994604</td><td>2.04E+15</td><td>2.16E+16</td><td>0</td><td>4.96E+18</td></tr>
+              </tbody>
+            </table>
+        <p style="text-align: justify;">
+            The descriptive statistics shown all features have the same number of counts, with the minimum value at
+            “AMM_avg_5” and maximum value at “AMM_avg_8”. The mean and standard deviation show varying ranges
+            across feature, with some low value to extremely high of variability. This mean that some features show a
+            wider range of value which is easy to capture the different between songs in different genres. On the other
+            hand, several features with low variability might not useful as they do not show many meaningful across
+            different genres. Hence, the model might become bias as it had been dominating by the high variability
+            features. Furthermore, when it comes to logistic regression, we can use the size of coefficients as a proxy
+            for feature important, but only when the features have the same mean and standard deviation. If one feature
+            has a much larger scale than other features, the coefficient can be really small and have a big impact in
+            overall model. Hence, if we want to interpret the coefficient of the features, we should take the scale of
+            features into account. As a result, feature scaling (e.g normalization) can be used to make all features
+            contribute equally when it comes to training model.</p>
+        <h4>2.2 How features distributed?</h4>
+        <p style="text-align: justify;">
+            In order to know how the features are distributed, the histogram shown the distributed of each feature
+            between mean and standard deviation had been generated (see Appendix C). According to the histogram, it
+            appears that several features have a similar distribution, particularly between standard deviation and average
+            columns. For example, “AMM_std_5” to “AMM_std_10” and “AMM_avg_5” to AMM_avg_10” share the same
+            distribution as it heavily skewed towards the small values with most of data concentrate near zero. On the
+            other hand, the “AMM_std_1”, “AMM_std_3” and “AMM_avg_1”, “AMM_avg_3” show the variation compared
+            to the others but it still appears some skewness. Since features are distributed similarly, they may contribute
+            less to distinguishing between classes lead because it provides redundancy information where features do
+            not add new information for the model. Hence, the model might be struggled to identify the patterns between
+            features and the target variables.</p>
+        <h4>2.3 Features Correlation</h4>
+        <p style="text-align: justify;">
+            To identify any features are correlated, the correlation matrix had been performed to calculate the correlation
+            between each feature. The “VectorAssembler()” used to transform PySpark dataframe into vectors, the
+            feature name now had transform to the vector as 0 to 19, represent 20 feature columns respectively. The
+            Correlation function in “PySpark.ml” was used to perform the correlation matrix (Ayan, 2024). In order to
+            make it easy to read and interpret we transform it into Pandas dataframe and perform a heatmap as below:</p>
+            <figure class="image-card">
+                <img src="{{ url_for('static', filename='image/million_songs_project/correlation_heatmap.png') }}"
+                alt="Trend_Minor&Serious_Crashes"
+                loading="lazy"
+                decoding="async"
+                style="aspect-ratio: 16/9; object-fit: contain;"
+                >
+            <figcaption>Figure 1:Heatmap showing correlations among extracted features.</figcaption>
+            </figure>
+        <p style="text-align: justify;">
+            The heatmap shows the pairwise correlations between different features in the MOA dataset. Features with
+            correlations close to 1 (deep red) are strongly positively correlated. For example, feature 5 and feature 19
+            are strongly correlated (0.9), these features might share the similar patterns. Features with correlations close
+            to -1 (deep blue) are strongly negatively correlated. For example, feature 13 and feature 14 are perfectly
+            negative correlated with a value of -1. Correlations close to 0 indicate a little to no linear relationship between
+            them. Notice that feature 10 only have the high correlation with feature 0 and seem to be very low to no
+            correlation between other features. Moreover, based on the heatmap we can observe that there are many
+            features that perfectly correlated need to be taken into account. In order observe it more detail, we group all
+            the feature pairs that exactly perfect correlated and assign the column names instead of showing the vector
+            number (appendix D). There are 16 features that perfectly correlated with the corelation score of 1 and -1
+            which is also called the perfect multicollinearity. This might be a potential problem if we include all the features
+            into the model as it will violate the assumption of linear model that independent variables are not perfectly
+            correlated. When independent variables are correlated, the changes in one variable are associated with shifts
+            in another variable, this mean that the stronger the correlation is the more difficult for the model to estimate
+            the relationship between each independent and dependent variable independently (Frost, 2017). According
+            to (Frost,2017), there are some potential solutions to dealing with the multicollinearity such as remove highly
+            correlated features or using Lasso and Ridge regression to shrink the multicollinearity feature less impact to
+            the model. Hence, in this assignment, due to time constraint, we used regularization method to deal with
+            those high correlated features, if we have more time, it also good to deep dive into each feature and explore
+            how it related to genre classification.</p>
+
+        <h3>3. Load the MSD Allmusic Genre Dataset (MAGD) & Visualize the distribution of genres</h3>
+        <p style="text-align: justify;">
+            In order to load the MSD Genre dataset, we first define the schema and load the msd-MAGD-
+            genreAssignment.tsv file from HDFS into a Spark DataFrame called MAGD_genre_data. This dataset
+            contains two columns: track_id and the corresponding genre for each song. According to MAGD_genre_data,
+            there are 422,714 tracks with genre information. To visualize the distribution of genres for the tracks that were
+            matched with the audio features, we perform an inner join between MAGD_genre_data and the AOM features
+            dataset using the MSD_TRACKID. This inner join ensures only tracks with both genre and feature data are
+            included. After the join, the resulting dataset, songs_with_genre, is used to visualize the genre distribution
+            and ready for further analysis.</p>
+        <p style="text-align: justify;"> 
+            The genre distribution in this dataset reveals a clear imbalance, with Pop_Rock
+            dominating over 56% of the tracks, while smaller genres like Holiday, Children and Classical each make up
+            less than 1%. This uneven distribution can significantly affect the performance of a machine learning model.
+            For example, if we want to predict the Electronic genre, which makes up less than 10% of the total tracks,
+            the model might struggle because it is biased toward predicting dominant genre (Pop_Rock). Even if the
+            model misclassifies most Electronic genre as Pop_Rock, it could still achieve high overall accuracy due to
+            imbalance. However, this would not be useful if our goal is to accurately identify Electronic tracks. In this
+            scenario, the accuracy metric becomes misleading as it does not provide a true measure of the model ability
+            to detect the less common Electronic genre, leading to poor performance in the areas where its matters most.</p>
+
+        <h3> 4. A brief summary of each of algorithms has been chosen</h3>
+        <p style="text-align: justify;">
+            In order to address this classification task, we choose 3 classification algorithms which is Logistic Regression,
+            Random Forest and Gradient Boosted Tree. Logistic Regression (LR) is a linear model, which means it has
+            a relatively simple mathematical structure, leading to fast training speed. It provides coefficients for each
+            feature which represent the strength of and direction of the relationship between feature and target. Due to
+            its high explainability and interpretability, LR is often used as a baseline model. However, it can easily overfit
+            since there are highly correlated features in the AOM dataset as it might give too much weight to redundant
+            information. To address this, regularization techniques such as L1 (Lasso) and L2 (Ridge) will be used to
+            shrink the coefficient of redundant features. Moreover, when perform the regularization, it is sensitive to
+            feature scaling since the penalty will treat features as same scale. According to descriptive statistics, there
+            are huge differences in the range between each feature, it is important to apply scaling method to scale all
+            features to a similar range. Random Forest is an ensemble learning method that builds multiple decision
+            trees and combines them to produce more accurate and stable predictions. It is well suited for handing
+            complex datasets and can handle non linear data and high dimensionality without require data scaling or
+            regularization as it will pick the most important feature to perform a split. However, due to its complexity when
+            building multiple trees, it had slow training speed compared to linear models and also difficult to interpret
+            since it requires some hyperparameter tuning such as number of trees and depth of trees. Gradient Boosted
+            Trees (GBT) is an ensemble learning method that builds a series of decision trees where each subsequent
+            tree corrects the errors of the previous one. This sequential training makes GBT highly accurate and effective
+            at handling both linear and non linear relationships. However, similar to RF, GBT involves many decision
+            trees, making it difficult to understand how the model predicts. It also easy prone to overfitting and huge
+            computational time as it requires many hypermeters tunning.</p>
+            
+        <div class="table-container">  
+        <table class="styled-table">
+          <caption style="caption-side: top; text-align: center; font-weight: bold;">
+              Table 4. Algorithms comparison
+          </caption> 
+          <thead style="background-color: #d4ecf7;">
+              <tr>
+              <th> </th>
+              <th>Logistic Regression</th>
+              <th>Random Forest</th>
+              <th>Gradient Boosted Trees</th>
+              </tr>
+          </thead>
+          <tbody>
+              <tr>
+              <td>Explainability</td>
+              <td>High</td>
+              <td>Low</td>
+              <td>Low</td>
+              </tr>
+              <tr style="background-color: #eaf6fb;">
+              <td>Interpretability</td>
+              <td>High</td>
+              <td>Low</td>
+              <td>Low</td>
+              </tr>
+              <tr>
+              <td>Predictive Accuracy</td>
+              <td>Moderate</td>
+              <td>High</td>
+              <td>High</td>
+              </tr>
+              <tr style="background-color: #eaf6fb;">
+              <td>Training Speed</td>
+              <td>Fast</td>
+              <td>Slow</td>
+              <td>Slow</td>
+              </tr>
+              <tr>
+              <td>Hyperparameter Tuning</td>
+              <td>Minimal (L1 & L2)</td>
+              <td>High</td>
+              <td>High</td>
+              </tr>
+              <tr style="background-color: #eaf6fb;">
+              <td>Scaling Requirement</td>
+              <td>Required</td>
+              <td>Not required</td>
+              <td>Not required</td>
+              </tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>5. A brief statement of class imbalance and how it affects model.</h3>
+        <p style="text-align: justify;">
+            To convert the genre column into a new binary label the represent Electronic genre and other genre, a new
+            columns called “class” is created with filter if the genre is Electronic than assign the value 1 and otherwise is
+            0 for other genre using the “F.when” function. By count the number of songs in each class (0 and 1) and
+            calculate the percentage, the class imbalance of a binary model shown as below:</p>
+            <div class="table-container">  
+              <table class="styled-table">
+                <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                    Table 5. Binary Class Distribution
+                </caption>
+                <thead style="background-color: #b3e0ff;">
+                  <tr>
+                    <th>Class</th>
+                    <th>N.o of songs</th>
+                    <th>Percentage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Electronic (1)</td>
+                    <td>40,662</td>
+                    <td>9.67%</td>
+                  </tr>
+                  <tr>
+                    <td>Non - Electronic (0)</td>
+                    <td>379,942</td>
+                    <td>90.33%</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Total</strong></td>
+                    <td><strong>420,604</strong></td>
+                    <td><strong>100%</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+        <p style="text-align: justify;">
+            According to table 5, there is a highly imbalanced between Electronic and Non Electronic genre, with 
+            approximately 9.67% of the tracks labelled as Electronic and 90.33% are Non  Electronic. 
+            This imbalance can negatively affect the performance of the classification model. 
+            Specifically, the model may become biased toward the majority class, predicting more often due to the larger
+            number of samples. This could create a high accuracy but fail to correctly predict the minority class and could
+            lead to poor performance as our goal is trying to identify the minority Electronic tracks.
+        <h3>6. Explanation of stratify random split and resampling methods</h3>
+        <p style="text-align: justify;">
+            Since there is an extreme class imbalance in the dataset, we apply stratified sampling when performing the
+            train – test split to ensure class balance is preserved. We start by generating a unique ID column, which will
+            allow us to an anti - join later. Next, we create a random column containing random numbers for each row.
+            After that, we generate a new column for row numbers using the window function, evaluated over the window
+            to give row numbers for each class. The window specification is used to partition by our label and order it
+            randomly. Once we have the row numbers, we then define a filter, for label 0 (Electronic) we keep the row if
+            its row number is less than the number of classes 1 (Non – Electronic) rows multiplied by a specific proportion
+            (0.8). Finally, we perform anti join using the ID column generated earlier to obtain the test set, then we drop
+            irrelevant columns. By doing this, we ensure that the class proportion in both training and test sets mirror the
+            original data distribution. The class balance is maintained across both sets, preventing further imbalance.
+            This approach provides consistent class ratios even when running multiple random splits, allowing us to
+            generate reliable precision and recall metrics for test data. The table below show the rows and ratio for
+            training and test. Since our data have a high imbalanced class, before fitting it to the model we want to
+            potentially change this classes proportion in the training data, so the model is more sensitive to our target
+            genre (Electronic). Our goal is trying 4 different types of resampling methods with 3 different models
+            (mentioned above) to determine which yield the best performance. Firstly, we use the oversampling where
+            we are randomly upsample observations of rare classes. The key ideas are keeping the same number of
+            class 0 while upgrade more class 1 which a specific ratio. This might increase the sensitivity without throw
+            away any values. Secondly, instead of creating more class 1 sample, we aim to fewer down class 0 to get a
+            balance proportion between 2 classes. Thirdly, we try to combine both up and down sampling with setting the
+            lower bound and upper bound, this approach seems to be more advance as it changing 2 classes at the
+            same time ensuring both contribute to the class balance. Finally, instead of changing the actual rows, we
+            simply weight the portion of those observations invert to their frequency. For example, in our case we will
+            give the class 1 large weight and underweight for class 0. This allows the training method (e.g SGD) to update
+            the learning rate effectively when it comes across the class 1 and 0. The table below shown the ratio of each
+            resampling methods.
+        </p>
+        <div class="table-container">  
+          <table class="styled-table resample-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+              Table 6. Resampling Methods
+            </caption>
+            <thead>
+              <tr>
+                <th rowspan="2">Class Label</th>
+                <th colspan="2">No Sampling</th>
+                <th colspan="2">Down Sampling</th>
+                <th colspan="2">Up Sampling</th>
+                <th colspan="2">ReSampling</th>
+                <th colspan="1">Reweighting</th> 
+              </tr>
+              <tr>
+                <th>Count</th><th>Ratio (%)</th>
+                <th>Count</th><th>Ratio (%)</th>
+                <th>Count</th><th>Ratio (%)</th>
+                <th>Count</th><th>Ratio (%)</th>
+                <th>Weight</th> 
+              </tr>
+            </thead>
+        
+            <tbody>
+              <tr>
+                <td>Electronic Genre (1)</td>
+                <td>32529</td><td>0.09667</td>
+                <td>32529</td><td>0.333248</td>
+                <td>50167</td><td>0.1451</td>
+                <td>49921</td><td>0.27391</td>
+                <td>5</td>
+              </tr>
+              <tr>
+                <td>Other Genre (0)</td>
+                <td>303953</td><td>0.90333</td>
+                <td>65083</td><td>0.666752</td>
+                <td>296036</td><td>0.85624</td>
+                <td>131496</td><td>0.72149</td>
+                <td>0.5</td>
+              </tr>
+              <tr>
+                <td><strong>Total</strong></td>
+                <td><strong>336482</strong></td><td></td>
+                <td><strong>97612</strong></td><td></td>
+                <td><strong>346203</strong></td><td></td>
+                <td><strong>181417</strong></td><td></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>        
+        <h3>7. Train models and evaluate on test set. </h3>
+        <p style="text-align: justify;">
+            For LR model, we have used 10% from the training dataset to do the 5 - folds cross validation to find the best
+            lambda for regularization. Surprisingly, after 5 folds validation no regularization yield the best AUROC,
+            moreover, we also compare the performance between regularization and non regularization, however, the
+            non regularization yield the best performance over the test set over all sampling methods.
+            After resampling three models had been used to train and evaluate the metrics on the test set as below:
+        </p>
+        <div class="model-performance-table">  
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 7. Model Performance Comparison
+            </caption>
+            <thead style="background-color: #b3e0ff;">
+              <tr>
+                <th rowspan="2">Models</th>
+                <th rowspan="2">Sampling Methods</th>
+                <th colspan="4">Performance Metrics</th>
+              </tr>
+              <tr>
+                <th>Accuracy</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>AUROC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Logistic Regression -->
+              <tr class ="model-separator">
+                <td rowspan="5" style="background-color: #d9ecff;">Logistic Regression</td>
+                <td>No Sampling</td><td>0.9032</td><td>0.4217</td><td>0.004303</td><td>0.6303</td>
+              </tr>
+              <tr>
+                <td>UpSampling</td><td>0.9030</td><td>0.3810</td><td>0.005902</td><td>0.6307</td>
+              </tr>
+              <tr>
+                <td>ReSampling (up/down)</td><td>0.9001</td><td>0.3210</td><td>0.029878</td><td>0.6330</td>
+              </tr>
+              <tr>
+                <td>DownSampling</td><td>0.8935</td><td>0.2851</td><td>0.067380</td><td>0.6324</td>
+              </tr>
+              <tr>
+                <td>Observation Reweighted</td>
+                <td>0.8856</td>
+                <td>0.2534</td>
+                <td style="color: red;">0.094184</td>
+                <td>0.6327</td>
+              </tr>
+          
+              <!-- Random Forest -->
+              <tr class ="model-separator">
+                <td rowspan="5" style="background-color: #d9ecff;">Random Forest</td>
+                <td>No Sampling</td><td>0.9033</td><td>0.5590</td><td>0.000369</td><td>0.6656</td>
+              </tr>
+              <tr>
+                <td>UpSampling</td><td>0.9032</td><td>0.5294</td><td>0.027665</td><td>0.6643</td>
+              </tr>
+              <tr>
+                <td>ReSampling (up/down)</td><td>0.9032</td><td>0.4921</td><td>0.026804</td><td>0.6669</td>
+              </tr>
+              <tr>
+                <td>Down Sampling</td><td>0.8751</td><td>0.2825</td><td>0.189475</td><td>0.6812</td>
+              </tr>
+              <tr>
+                <td>Observation Reweighted</td>
+                <td>0.8668</td>
+                <td>0.2683</td>
+                <td style="color: red;">0.218493</td>
+                <td>0.6804</td>
+              </tr>
+          
+              <!-- Gradient Boosted Tree -->
+              <tr class ="model-separator">
+                <td rowspan="5" style="background-color: #d9ecff;">Gradient Boosted Tree</td>
+                <td>No Sampling</td><td>0.9036</td><td>0.5512</td><td>0.017214</td><td>0.7123</td>
+              </tr>
+              <tr>
+                <td>UpSampling</td><td>0.9036</td><td>0.5205</td><td style="color: red;">0.032829</td><td>0.7092</td>
+              </tr>
+              <tr>
+                <td>ReSampling (up/down)</td><td>0.9038</td><td>0.5459</td><td>0.027050</td><td>0.7129</td>
+              </tr>
+              <tr>
+                <td>Down Sampling</td><td>0.8564</td><td>0.2683</td><td>0.280708</td><td>0.7174</td>
+              </tr>
+              <tr style="background-color: yellow;">
+                <td>Observation Reweighted</td>
+                <td>0.8562</td>
+                <td>0.2693</td>
+                <td>0.284643</td>
+                <td style="color: #0000cc;"><strong>0.7175</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="text-align: justify;">
+            When comparing the different models, AUROC is a suitable as it is based on changing classification
+            thresholds and observing how our true positive and false positive rate trade off each other. Therefore, it is
+            independent on the classification threshold, allows AUROC capturing the overall effective. Based on Table 6,
+            resampling methods significantly improve recall compared to the original models, indicating that these
+            methods help address class imbalance by making the model more sensitive to the minority class. In LR
+            model, while observation reweighting achieves the highest recall, the resampling method provides the highest
+            AUROC. Similarly, for Random Forest, reweighting achieves higher recall, but down sampling yields the best
+            AUROC, making it the most balanced option for this algorithm. Notably, the Gradient Boosted Tree (GBT)
+            model achieves the highest AUROC (0.7175), suggesting it has the strongest ability to distinguish between
+            the Electronic and Non-Electronic classes. Therefore, if the goal is to maximize the ability to distinguish
+            between the two classes, the GBT model with observation reweighting is the best choice due to its highest
+            AUROC.
+        </p>
+        <h3>8. Explanation of how chosen algorithm predict mutiple classes</h3>
+        <p style="text-align: justify;">
+            There are multiple algorithms can be chosen to perform the multiple classification, however, in this
+            assignment, we choose the Logistic Regression (LR) algorithm from “ml.pyspark” to perform the multiple
+            classification for two reasons. First, in spark.ml logistic regression natively supports the multiple classes
+            classification by using multinomial logistic regression with the “family” parameter as it provides a probability
+            across multiple classes (Spark 3.5.3 Documentation, n.d.). Secondly, as mentioned above, LR model have
+            the fast-training speed compared to other models like RF and GBT, due to the time constraint for this
+            assignment, we also choose LR model for time efficiency.
+        </p>
+        <h4> How classes imbalance effect the result?</h3>
+        <p style="text-align: justify;">
+            When transitioning from binary classification to multiclass classification, the class imbalance has changed
+            significantly. In binary case, we only needed to distinguish between two classes with 40, 662 tracks labeled
+            as Electronic, and the rest is grouped into Non Electronic category. However, in the multiclass scenario, it
+            much more diverse distribution across 21 genres with “Pop_Rock” dominating at 237,641 tracks while genre
+            like “Holiday” and “Children” are highly underrepresented with only 200 and 463 tracks respectively. Since
+            our target is trying to have a reasonably balance performance across genres. Therefore, resampling methods
+            was taken into account here since several genre have a very low count which make the model struggle to
+            classify these classes.    
+        </p>
+        <h3> 9. Stratified random split and resampling method </h3>
+        <p style="text-align: justify;">
+            Similar to binary classification, we apply stratified sampling to ensure class balance is preserved. The strategy
+            remains the same as in binary classification, however, instead of splitting two classes, we now split multiple
+            classes while ensuring that each class maintains the same ratio in both the training and test sets. After
+            performing the split, in order to a reasonably balance performance between classes, we perform the
+            resampling method which include up sampling for minority class and down sampling for majority, making it
+            more balanced together. However, we also do not want to make it perfectly balance as in real life there is
+            also a wide distribution between each genre. Therefore, we create the lower bound and upper bound by
+            defined the average class count where we take number of rows divided by the number of classes. For the
+            overrepresentation genres we down sampling it to the upper bound which might less improve model
+            performance but improve the training efficiency and for the underrepresentation genres we want to up
+            sampling to within lower bound.       
+        </p style="text-align: justify;">
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/million_songs_project/class_distribution.png') }}"
+          alt="Class Distribution After Resampling"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+        <figcaption>Figure: Genre distribution before and after resampling.</figcaption>
+        </figure>
+        </p style="text-align: justify;">
+        Based on figure 2, before resampling class 0 dominated the dataset with a large skew compared to other
+        classes while classes 9 to 20 were underrepresented when it falls below the lower bound. After applying
+        resampling method, the classes were balanced more evenly between the lower and upper bounds of their
+        respective counts, indicating successful adjustment of class distribution. This adjustment ensures that the
+        model is not biased toward a specific genre and improves its ability to provide balanced performance across
+        all genres, which is particularly important when predicting multiple genres.
+        <h3>10. Evaluate multiclass classification performance metric</h3>
+        <p style="text-align: justify;">
+        After resampling the training dataset and make all classes more balanced, we trained Logistic Regression
+        model using multinomial classification to predict all genres. As there are multiple classes, we used the weight
+        metrics such a precision, recall and f1 score to evaluate the performance.
+        </p>
+        <div class="table-container">  
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 8. Weighted metrics for multiple classification
+            </caption>
+            <thead style="background-color: #b3e0ff;">
+              <tr>
+                <th>Model</th>
+                <th>Weight Precision</th>
+                <th>Weight Recall</th>
+                <th>Weighted F1 Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Multinomial Logistic Regression</td>
+                <td><strong>0.454</strong></td>
+                <td><strong>0.363</strong></td>
+                <td><strong>0.393</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="text-align: justify;">
+            As shown in the table 8, the very low performance metrics across all table, indicate that predicting multiple
+            classes even harder than the binary once especially when there is significant class imbalance. The weight
+            precision 0.454 indicating on overage across all classes 45.4% of the model’s positive predictions were
+            correct. A weighted recall of 0.363 emphasizes only 36.3% the model correctly predicts the actual positive
+            instances. The weighted F1 Score of 0.393 suggests that the model performance in both precision and recall
+            is relatively low, highlighting the trade – off between them. Since precision is calculated as True Positives
+            over predicted positives, when dealing with more than two classes, we weight each class's precision by the
+            proportion of actual positives for that class relative to the total. However, in cases of class imbalance,
+            weighted precision and recall can be heavily biased toward the majority (often negative) class. For example,
+            the model could have 0 precision for a minority class like 'Holiday' but still achieve a high weighted precision
+            due to performing well on the majority class like 'Pop_Rock', similar to how accuracy can be misleading. This
+            means that weighted precision and recall can hide important details about per-class performance. To fully
+            understand the model’s behaviour, it is crucial to examine precision and recall for each class individually.
+        </p>
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/million_songs_project/Per_Class_Distribution.png') }}"
+          alt="Distribution Per Classes"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+        <figcaption>Figure: Comparison of Class Contribution and Per-Class Precision and Recall Metrics</figcaption>
+        </figure>
+        <p style="text-align: justify;">
+            Based on figure 3, there is no surprise that class 0 and 1 have a largest precision and recall across all genre
+            as they have a dominant distribution compared other. Although we already resample the minority classes
+            such as 7,8,9,10,12,19, 20, they also perform not too good in precision and recall, this might because it only
+            create a duplicate value when upsampling which introduce to noise. On the other hand, some of minority
+            class (13,14,15,17,18) have improve the precision and recall after we upsampling it even though it consider
+            as rare classes. As a result, by looking at precision and recall per class and compare it to their original
+            distribution, we can understand how these metrics performed ans why it perform good or bad. Moreover, if
+            we were interested in a particular rare class, we can possibly weight it more in our training.        
+        </p>
+    </section>
+
+    <section>
+        <h2>PART III: SONG RECOMMENDATIONS</h2>
+        <h3> I. Explore The Taste Profile Dataset</h3>
+        <h4>1. Advantages and disadvantages of repartitioning and caching the dataset</h4> 
+        <p style="text-align: justify;">
+            The Taste Profile dataset contains real user-song play counts from undisclosed organisations, it stored in
+            HDFS with 8 “tsv.gz” compressed files, if we load that into Spark it will have 8 partitions, the size of data is
+            3.3 GB uncompressed, hence each partition would be approximately 412.5 MB when reading the dataset
+            into Spark. By using 2 cores and 3 executor (4 cores in total) we probably do not need to repartition bacause
+            we already got 2 partitions per core which will take a same amount of time as our data have a uniform
+            distribution size. On the other hand, if we want to use more resources, for example try to train different
+            models, we should consider to repartition and cache the result for more efficiency. However, repartition will
+            require a full shuffle as it will re-distribute everything again which take a significant amount of time.
+        </p>
+        <h4> 2. Key Statistics for the Taste Profile Dataset </h4>
+        <p style="text-align: justify;">
+            After loading the Taste Profile dataset into HDFS (triplets_data), we used CountDistinct() to identify 384,546
+            unique songs and 1,019,318 unique users. To determine the number of unique songs played by the most
+            active users, we grouped the data by user_id and counted the distinct songs each user played. The most
+            active user played 4,400 songs, which accounts for 1.14% of the total unique songs. We also generated
+            descriptive statistics for the play_count column to better understand the data distribution. There are
+            48,373,586 total play counts. The mean play count is approximately 2.87, meaning users typically listened to
+            a song around three times. The standard deviation is 6.44, indicating some variability in play counts. The
+            minimum play count is 1 meaning the smallest play count is a single play, while the maximum play count is
+            995, showing that some users have listened to a song nearly 1,000 times (table 10). Moreover, by plotting
+            the distribution between number of songs and there play counts (Appendix G), there are 22,084 songs had
+            only played one time and not so many songs play more than 10 times.
+        </p>    
+        <div class="table-container">  
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 9. Descriptive Statistics
+            </caption>
+            <thead style="background-color: #b3e0ff;">
+              <tr>
+                <th colspan="2">General Count and Percentage</th>
+                <th colspan="2">Descriptive Statistics</th>
+              </tr>
+              <tr>
+                <th>Statistics</th>
+                <th>Value</th>
+                <th>Statistics</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>No. of unique songs</td>
+                <td>384,546</td>
+                <td>Mean</td>
+                <td>2.86</td>
+              </tr>
+              <tr>
+                <td>No. of unique users</td>
+                <td>1,019,318</td>
+                <td>Std</td>
+                <td>6.44</td>
+              </tr>
+              <tr>
+                <td>Unique Songs Played by most active users</td>
+                <td>4,400</td>
+                <td>Min</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>Percentage of Total Songs by most active users</td>
+                <td>1.14%</td>
+                <td>Max</td>
+                <td>995</td>
+              </tr>
+              <tr>
+                <td>Total play counts</td>
+                <td>48,373,586</td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h4> 3. Distribution of song popularity and user activity </h4>
+        <p style="text-align: justify;">
+            We determine the song popularity by looking at the total play per song as we believe the higher the song play
+            counts, the higher popularity is, hence, this was calculated by grouping the data by “song_id” and count the
+            number of song plays. Similarly to user activity, we consider the more active users, the more songs that they
+            played, therefore, we group the data by “user_id” and aggregate the number songs that users have played
+            then sorted from highest to lowest. Since we only want to understand the distribution of song popularity and
+            user activity, we use the kernel density estimation (KDE) plot to observe the smooth trend, as well as the tails
+            and peaks of the distribution, instead of a histogram. The histogram would be sensitive to bin size, especially
+            in this case, where large bins make interpretation difficult.
+        </p>
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/million_songs_project/kernel_density.png') }}"
+          alt="Kernel Density"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+          <figcaption>Figure: Kernel density distribution User activity & Song popularity.</figcaption>
+        </figure>
+        <p style="text-align: justify;">
+            Both the User Activity and Song Popularity plots exhibit a heavy right-skewed distribution. This means that
+            the majority of users have listened to only a few unique songs, while a small number of users have listened
+            to a large variety of songs. Similarly, most songs have been played only a few times, while a few songs have
+            been played many times.
+        </p>
+        <h3> II. Train The Collaborative Filtering Model. </h3>
+        <h4>1. A brief description of the chosen values for N and M </h4>
+        <p style="text-align: justify;">
+            Since we are going to train colaborative filtering model which used similar users and songs based on their
+            combined play history, hence, songs which have not been played only a few times (N) and users who have
+            only listened to a few songs (M) will not contribute much information to the model. According to (Appendix
+            G), we can observe that most of the songs have been played in the range 1 to 5 which account for 20% of
+            the unique songs. Therefore, we set a minimum threshold where a song must have been played at least 5
+            times (N = 5), similarly, since we want to working with users who have sufficient interaction history, we decide
+            to defined the most active users is who have listened to at least 10 different songs (M = 10) to included in the
+            cleaned dataset. However, this is just a subjective choice based on what we observed from the data
+            distribution, if would be more reasonable when perform the cross valiadation to choose the optimal M and N
+            if we have time.
+        </p>
+        <h4> 2. Numbers of users and songs remain in the dataset </h4>
+        <p style="text-align: justify;">
+            After deciding the thresholds for N and M, we filtered out songs that were played fewer than 5 times and
+            users who listened to fewer than 10 songs using the filter() function. Once these individual filters were applied,
+            we used anti joins to remove both the low-interaction songs and the low-activity users from the original
+            triplets_data dataset. After applying the joins, the number of users and songs remaining in the dataset is
+            displayed as follows.
+        </p>
+        <div class="table-container">  
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 10. Number of users and songs remain
+            </caption>
+            <thead style="background-color: #b3e0ff;">
+              <tr>
+                <th>Dataset</th>
+                <th>Before Filter</th>
+                <th>After Filter</th>
+                <th>N.o users/songs excluded</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Song Popularity</td>
+                <td>384,546</td>
+                <td>310,842</td>
+                <td>73,704</td>
+              </tr>
+              <tr>
+                <td>Users_Active</td>
+                <td>1,019,318</td>
+                <td>1,012,902</td>
+                <td>6,416</td>
+              </tr>
+            </tbody>
+          </table>    
+        </div>
+        <h4>3. Explanation of why every user in the test set must have at least some user-song plays in training set </h4> 
+        <p style="text-align: justify;"> 
+            The dataset will be split such that the test set includes at least 20% of all song plays. It is essential to
+            guarantee that each user in the test set has corresponding user-song plays in the training set, as the
+            collaborative filtering model relies on user preferences for items such as users, songs and play_count to
+            recommend potential plays or listens of other items. Moreover, numerical indices for users and songs will be
+            required, by using the ‘StringIndexer’ tool to transform user IDs and song IDs from text to numerical format
+            then a pipeline will be used to integrates these steps into a single process and applied to the ‘user_song_play’
+            dataset. This process generates two additional columns which is ‘user_ID_label’ and ‘song_ID_label’, contain
+            the numerical indices for users and songs. The new dataset will be divided using 'randomSplit' with an 80%
+            training and 20% testing. To verify that users in the test set do not have any interactions in the training set,
+            we conduct a left anti join between the test and training sets. A count of 0 indicates that all users in the test
+            set have interactions with the training set.
+        </p>
+        <h4>4. Train an implicit matrix factorization model using Alternating Least Squares (ALS) </h4>
+        <p style="text-align: justify;"> 
+            After splitting the dataset, we performed an Alternating Least Squares (ALS) to train the model with the
+            regularization (regParam: 0.01) and 5 maximum iterations.
+        </p>
+        <h4>5. Generate some recommendations, making qualitative comparison </h4>
+        <p style="text-align: justify;"> 
+            After training the ALS model, we generate the subset of 200 users on the test set to make the qualitative
+            comparison between how the recommendation with the actual users play counts. In order to perform this, we
+            generate the top 10 recommendations for each user and join this with the 200 subset users to find the overlap
+            between each recommendation and their actual play counts. As a result, there are only 3 overlaps between
+            the recommendation and its actual play (Appendix H). This poor performance might come from the intensive
+            outliers, according to figure 6, there are several songs had been played too many times which could be an
+            outliers since it had been playing at the coffee shop or restaurants over times, this could disproportionately
+            influence the model and skew the recommendations toward these overplayed songs and not represent the
+            true user preferences. Therefore, handling with those outliers should be necessary before fitting the model.
+        </p>
+        <h4>6. Compute Ranking Metric on test set and its limitations </h4>
+        <p style="text-align: justify;">
+            In order to evaluate the performance of the recommendation model, we used three ranking metrics as shown
+            below:    
+        </p>
+        <div class="table-container">  
+          <table class="styled-table">
+            <caption style="caption-side: top; text-align: center; font-weight: bold;">
+                Table 11. Ranking Metrics
+            </caption>
+            <thead style="background-color: #b3e0ff;">
+              <tr>
+                <th colspan="2">Ranking Metrics for implicit recommendation</th>
+              </tr>
+              <tr>
+                <th>Metrics</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Precision @ 10</td>
+                <td>0.0286</td>
+              </tr>
+              <tr>
+                <td>NDCG @ 10</td>
+                <td>0.0282</td>
+              </tr>
+              <tr>
+                <td>MAP @ 10</td>
+                <td>0.0598</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="text-align: justify;">
+            Precision @ 10 measures the proportion of relevant songs in the top 10 recommendations. On average, there
+            is 2.86% of the recommendations songs in the top 10 were actual played by users, however, this metric does
+            not take into account the position of the recommendations, it just consider whether it relevant or not. We like
+            the metrics that take into account the position of rank as the top 3 right will be more efficient than the last 3
+            among 10 recommendations. Therefore, we need the NDCG @ 10 as it not only take into account whether
+            recommended songs is relevant but also the position of the ranking items. However, these metrics were
+            evaluated based on measured historical user interaction data only with no interactions with actual users. Due
+            to the fact that it based on historical user play coutns, it might not be possible to capture the real world context
+            such as current user behavior, user changing preference and real time user 's feedback.
+        </p>
+        <h4> 7. Explanation of how we could evaluate the performance of recommendation systems in real world. </h4>
+        <p style="text-align: justify;">
+            Based on the limitation with evaluating ranking metrics in an offline way, an online performance metric will
+            be more advance as we can put our recommendation system in front of the users and exploring the users'
+            behaviors, it much more better compare to the offline metrics as it based on measuring new (live) user
+            interactions with the output of the model. For example, it captures if users click on recommendations or
+            measure some business metric such as KPIs to increase in revenue, user churn assessment which is the
+            rate that users come and leave our platform where we can keep users to continue subscription on our platform
+            if we have the right strategy. Instead of evaluating based on the set of metrics, we calculate the average of
+            daily metrics over time. For example, we use an average click through rate over time to evaluate whether it
+            good or bad. Moreover, the A/B testing can also be used to compare different versions of ranking algorithm
+            to real users at a chosen significant level. As a result, these are some of the methods we can use to assess
+            the ongoing performance of the recommendation model in a production environment as well as to evaluate
+            the real - world system.
+        </p>
+    </section>
+    <section>
+        <h2>PART IV: CONCLUSION</h2>
+        <p style="text-align: justify;">
+            The project explored the Million Song Dataset (MSD) by examining its structure, training binary and
+            multi-class genre classification models, and developing a recommendation system using collaborative
+            filtering (ALS). The AOM features dataset performed poorly in the classification tasks, likely due to its limited
+            ability to distinguish genres and the presence of highly correlated features. With more time, further feature
+            engineering and advanced hyperparameter tuning could improve model performance.
+        </p>
+        <p style="text-align: center; font-size: 24px; font-weight: bold;">
+        THANK YOU FOR READING!
+        </p>
+    </section>
+    <!-- Reference Section --> 
+    <section>
+        <h2>REFERENCES</h2>
+        <ol style="text-align: justify; max-width: 800px; margin-left: 0;">
+            <li>
+              Ajoodha, R., Klein, R., & Rosman, B. (2015). Single-labelled music genre classification using content-based features. <i>International Conference (PRASA-RobMech)</i>. <a href="https://doi.org/10.1109/robomech.2015.7359500" target="_blank">https://doi.org/10.1109/robomech.2015.7359500</a>
+            </li>
+            <li>
+              Fujinaga, I. (1996). Adaptive optical music recognition. Ph.D. dissertation, McGill University.
+            </li>
+            <li>
+              Ayan, D. (2024, February 4). A Guide to Correlation Analysis in PySpark - Davut Ayan. <i>Medium</i>. <a href="https://medium.com/@demrahayan/a-guide-to-correlation-analysis-in-pyspark-22824b9a5dda" target="_blank">https://medium.com/@demrahayan/a-guide-to-correlation-analysis-in-pyspark-22824b9a5dda</a>
+            </li>
+            <li>
+              Frost, J. (2017). Multicollinearity in Regression Analysis: Problems, Detection, and Solutions. <i>Statistics by Jim</i>. <a href="https://statisticsbyjim.com/regression/multicollinearity-in-regression-analysis/" target="_blank">https://statisticsbyjim.com/regression/multicollinearity-in-regression-analysis/</a>
+            </li>
+            <li>
+              Classification and regression - Spark 3.5.3 Documentation. (n.d.). <a href="https://spark.apache.org/docs/latest/ml-classification-regression.html#logistic-regression" target="_blank">https://spark.apache.org/docs/latest/ml-classification-regression.html#logistic-regression</a>
+            </li>
+          </ol>
+    </section>
+
+    <!-- Appendix Section -->   
+    <section>
+        <h2 style="color: #004E66; font-weight: bold;">APPENDIX</h2>
+        <!-- Appendix A -->
+        <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+        APPENDIX A: MILLION SONG DATASET DIRECTORY TREE
+        </h3>
+        <p>This appendix shows a directory trees structures of the MSD dataset organized in HDFS.</p>
+        <p>
+        <strong><u>Figure A1: Distribution of AMM standard deviation and average</u></strong>
+        </p>
+        <div class="image-container">
+        </caption> 
+        <img src="{{ url_for('static', filename='image/million_songs_project/MSD_Directory_Tree.png') }}" alt="Directory Tree" style="width: 100%; max-width: 700px; border-radius: 10px;">
+        </div>
+        <!-- Appendix B -->
+        <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+            APPENDIX B: Features Distribution Histogram
+        </h3>
+        <p>This appendix presents how the data had been distributed across features</p>
+        <p>
+        <strong><u>Figure B1: Distribution of AMM standard deviation and average</u></strong>
+        </p>
+        <div class="image-container">
+        </caption> 
+        <img src="{{ url_for('static', filename='image/million_songs_project/features_distribution_histogram.png') }}" alt="Directory Tree" style="width: 100%; max-width: 700px; border-radius: 10px;">
+        </div>
+        <!-- Appendix C -->    
+        <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+            APPENDIX C: Perfectly Correlated Feature Pairs
+        </h3>
+        <p>This appendix contains pairs of features that are perfectly correlated, either positively or negatively, as
+            shown in the table.
+        </p>
+        <p>
+        <strong><u>Figure C1: Feature pairs with perfectly correlated</u></strong>
+        </p>
+        <div class="table-container">  
+          <table class="styled-table">
+            <thead style="background-color: #cce7f5;">
+              <tr>
+                <th>Feature Pair</th>
+                <th>Correlation Score</th>
+                <th>Feature Pair</th>
+                <th>Correlation Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>AMM_std_2 & AMM_avg_2</td>
+                <td>1</td>
+                <td>AMM_std_7 & AMM_avg_7</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>AMM_std_4 & AMM_avg_4</td>
+                <td>-1</td>
+                <td>AMM_std_8 & AMM_avg_5</td>
+                <td>-1</td>
+              </tr>
+              <tr>
+                <td>AMM_std_5 & AMM_std_8</td>
+                <td>1</td>
+                <td>AMM_std_8 & AMM_avg_8</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>MM_std_5 & AMM_avg_5</td>
+                <td>-1</td>
+                <td>AMM_std_9 & AMM_avg_6</td>
+                <td>-1</td>
+              </tr>
+              <tr>
+                <td>AMM_std_5 & AMM_avg_8</td>
+                <td>1</td>
+                <td>AMM_std_9 & AMM_avg_9</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>AMM_std_6 & AMM_std_9</td>
+                <td>1</td>
+                <td>AMM_std_10 & AMM_avg_10</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>AMM_std_6 & AMM_avg_6</td>
+                <td>-1</td>
+                <td>AMM_avg_5 & AMM_avg_8</td>
+                <td>-1</td>
+              </tr>
+              <tr>
+                <td>AMM_std_6 & AMM_avg_9</td>
+                <td>1</td>
+                <td>AMM_avg_6 & AMM_avg_9</td>
+                <td>-1</td>
+              </tr>
+            </tbody>
+          </table>  
+        </div>
+        <!-- Appendix D -->    
+        <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+            APPENDIX D: Genres Distribution Across Tracks
+        </h3>
+        <p>This appendix displays the distribution of genres matched with the number of 
+            tracks across the dataset.
+        </p>
+        <p>
+        <strong><u>Figure D1: Feature pairs with perfectly correlated</u></strong>
+        </p>
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/million_songs_project/Genre_Distribution.png') }}"
+          alt="Genre Distribution"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+        </figure>
+        <!-- Appendix E -->
+        <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+            APPENDIX E: Regularization & Non – Regularization Logistic Regression
+        </h3>
+        <p>This appendix shows the comparison table of difference metrics between Lasso Logistic Regression and
+            Logistic Regression with multiples resampling methods.
+        </p>
+        <p>
+        <strong><u>Table E.1: Comparison of Logistic Regression (with and without Lasso) 
+            Using Different Resampling Methods</u></strong>
+        </p>
+        <div class="table-container">  
+          <table class="styled-table">
+            <thead style="background-color: #cce7f5;">
+              <tr>
+                <th rowspan="2">Models</th>
+                <th rowspan="2">Sampling Methods</th>
+                <th colspan="4">Performance Metrics</th>
+              </tr>
+              <tr>
+                <th>Accuracy</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>AUROC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Logistic Regression (without Lasso) -->
+              <tr>
+                <td rowspan="5" style="background-color: #e6f4fb; font-weight: bold;">Logistic Regression<br><em>(without Lasso)</em></td>
+                <td>No Sampling</td>
+                <td>0.9032</td>
+                <td>0.4217</td>
+                <td>0.004303</td>
+                <td style="background-color: yellow;">0.6303</td>
+              </tr>
+              <tr>
+                <td>UpSampling</td>
+                <td>0.9030</td>
+                <td>0.3810</td>
+                <td>0.005902</td>
+                <td style="background-color: yellow;">0.6307</td>
+              </tr>
+              <tr>
+                <td>ReSampling</td>
+                <td>0.9001</td>
+                <td>0.3210</td>
+                <td>0.029878</td>
+                <td style="background-color: yellow;">0.6330</td>
+              </tr>
+              <tr>
+                <td>DownSampling</td>
+                <td>0.8935</td>
+                <td>0.2851</td>
+                <td>0.067380</td>
+                <td style="background-color: yellow;">0.6324</td>
+              </tr>
+              <tr>
+                <td>Observation Reweighted</td>
+                <td>0.8856</td>
+                <td>0.2534</td>
+                <td>0.094184</td>
+                <td style="background-color: yellow;">0.6327</td>
+              </tr>
+          
+              <!-- Logistic Regression (Lasso) -->
+              <tr>
+                <td rowspan="5" style="background-color: #cce7f5; font-weight: bold;">Logistic Regression<br><em>(Lasso)</em></td>
+                <td>No Sampling</td>
+                <td>0.9033</td>
+                <td>0.4902</td>
+                <td>0.003074</td>
+                <td style="color: red;">0.6092</td>
+              </tr>
+              <tr>
+                <td>UpSampling</td>
+                <td>0.9028</td>
+                <td>0.3690</td>
+                <td>0.007623</td>
+                <td style="color: red;">0.6078</td>
+              </tr>
+              <tr>
+                <td>ReSampling</td>
+                <td>0.9008</td>
+                <td>0.2476</td>
+                <td>0.012542</td>
+                <td style="color: red;">0.6117</td>
+              </tr>
+              <tr>
+                <td>Down Sampling</td>
+                <td>0.9008</td>
+                <td>0.2692</td>
+                <td>0.015492</td>
+                <td style="color: red;">0.6148</td>
+              </tr>
+              <tr>
+                <td>Observation Reweighted</td>
+                <td>0.9006</td>
+                <td>0.2522</td>
+                <td>0.014263</td>
+                <td style="color: red;">0.6147</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Appendix F -->
+        <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+            APPENDIX F:  Distribution of Song Play Counts Across Unique Songs
+        </h3>
+        <p>
+            This appendix shows the distribution of the number of times songs were played, grouped by the number of
+            unique songs.
+        </p>
+        <p>
+        <strong><u>
+            Figure F.1: Distribution of Song Plays by Play Count
+        </u></strong>
+        </p> 
+        <figure class="image-card">
+          <img src="{{ url_for('static', filename='image/million_songs_project/Distribution_Song_Plays.png') }}"
+          alt="Distribution Song Plays"
+          loading="lazy"
+          decoding="async"
+          style="aspect-ratio: 16/9; object-fit: contain;"
+          >
+        </figure>
+        <!-- Appendix G -->
+        <h3 style="color: #004E66; font-weight: bold; text-align: center;">
+            APPENDIX G:  Recommendation Qualitative Comparison
+        </h3>
+        <p>
+            This appendix provides a qualitative comparison between recommended songs and actual play counts for
+            different users. Each row corresponds to a unique user and contains their recommended list of items, the
+            items they actual played, and the common elements between these two lists.
+        </p>
+        <p>
+        <strong><u>
+            Table G1: Comparison of Recommended and Actual Plays with Common Elements
+        </u></strong>
+        </p> 
+        <div class="table-container">  
+          <table class="styled-table">
+            <thead style="background-color: #cce7f5;">
+              <tr>
+                <th>user_ID_label</th>
+                <th>recommendations</th>
+                <th>actual_plays</th>
+                <th>common_elements</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background-color: yellow;">
+                <td><b>659898</b></td>
+                <td>[3.0, 1.0, 4.0, 6.0, 28.0, …]</td>
+                <td>[50.0, 4.0, 7218.0, 18.0]</td>
+                <td>[4.0]</td>
+              </tr>
+              <tr style="background-color: yellow;">
+                <td><b>840307</b></td>
+                <td>[29.0, 73.0, 96.0, 125.0, …]</td>
+                <td>[221.0, 141.0]</td>
+                <td>[141.0, 221.0]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>685326</b></td>
+                <td>[0.0, 8.0, 7.0, 5.0, 98.0, …]</td>
+                <td>[15.0, 124.0, 26.0]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>475827</b></td>
+                <td>[0.0, 5.0, 2.0, 3.0, 4.0, …]</td>
+                <td>[121003.0, 202483.0, 163163.0, …]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>685332</b></td>
+                <td>[15.0, 101.0, 19.0, 38.0, …]</td>
+                <td>[536.0]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>921218</b></td>
+                <td>[0.0, 2.0, 5.0, 8.0, 13.0, …]</td>
+                <td>[219469.0, 20576.0]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>840306</b></td>
+                <td>[0.0, 3.0, 5.0, 1.0, 4.0, 2.0, …]</td>
+                <td>[6812.0, 69.0]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>573811</b></td>
+                <td>[38.0, 15.0, 19.0, 65.0, …]</td>
+                <td>[4025.0, 19576.0, 10088.0, 2432.0]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>2033</b></td>
+                <td>[65.0, 38.0, 238.0, 89.0, …]</td>
+                <td>[7321.0, 23257.0, 236152.0, 109426.0, …]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>182240</b></td>
+                <td>[98.0, 168.0, 379.0, …]</td>
+                <td>[115614.0, 31565.0, 684.0, …]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>804686</b></td>
+                <td>[33.0, 12.0, 44.0, 5.0, …]</td>
+                <td>[6448.0, 5450.0, 8396.0, 2102.0]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>165944</b></td>
+                <td>[178.0, 318.0, 14.0, …]</td>
+                <td>[1044.0, 1025.0, 2480.0, …]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: #d9effb;">
+                <td><b>63600</b></td>
+                <td>[81.0, 30.0, 275.0, 152.0, …]</td>
+                <td>[41131.0, 493.0, 412.0, 89559.0, …]</td>
+                <td>[]</td>
+              </tr>
+              <tr style="background-color: yellow;">
+                <td><b>207917</b></td>
+                <td>[6.0, 21.0, 4.0, 3.0, 0.0, …]</td>
+                <td>[6.0, 204.0, 37465.0, 25157.0, …]</td>
+                <td>[6.0]</td>
+              </tr>
+            </tbody>
+          </table>      
+        </div>    
+</body>
+<footer>
+  <p style="text-align: center;"> © 2024 Scalable Data Science Project </p>
+</html>

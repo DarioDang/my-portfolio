@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        CHICAGO TAXI PREDICTION
+    </title>
+    <link rel="stylesheet" href="/static/style_chicago_taxi.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 80px auto 0; 
+            padding: 40px 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        section {
+            margin-bottom: 50px;
+        }
+    </style>
+</head>
+<body class="body">
+    {% include "navigate_bar.html" %}
+    <h1 style="text-align: center;">
+        CHICAGO TAXI MACHINE LEARNING <br> OPTIMIZATION PIPELINES  
+    </h1>
+    <div class="author-info">
+        <p><strong>Author:</strong> Dario Dang<br>
+           <strong>Date:</strong> July 28, 2025<br>
+            <a href="https://github.com/DarioDang/Chicago-Taxi-MLOPS/tree/main" target="_blank">Code File</a>
+        </p>
+    </div>
+    <section>
+    <h2>  BACKGROUND </h2>
+    <p style="text-align: justify;">
+        This project builds a complete end-to-end MLOps workflow using real-world Chicago Taxi Trips data. It covers everything from data 
+        ingestion and exploratory data analysis to experiment tracking, model deployment, and monitoring using modern tools like MLflow, Mage, 
+        AWS S3, Docker, and Evidently.
+    </p>
+    <h2> I. INTRODUCTION </h2>
+    <p style="text-align: justify;">
+        The Chicago Taxi Trips dataset is a rich source of information about taxi rides in Chicago, including pickup and drop-off locations, 
+        timestamps, trip distances, and fare amounts. This project aims to build a machine learning model to predict taxi fares based on these 
+        features, providing valuable insights for both taxi operators and passengers.
+    </p>
+    <h2> II. DATASET </h2>
+    <p style="text-align: justify;">
+        The dataset consists of over 1.5 million records of taxi trips in Chicago, collected from the City of Chicago's open data portal. 
+        Each record includes features such as pickup and drop-off locations, timestamps, trip distances, and fare amounts. In order to ingest the data
+        , I have used the python script to ingest the data via request library and store it in the local directory. 
+    </p>
+    <h2> III. MLOPS PIPELINE </h2>
+    <h3> 1. Data Ingestion & Exploration </h3>
+    <p style="text-align: justify;">
+        The first stage of this project focused on acquiring and understanding the Chicago Taxi Trips dataset, a large and diverse collection 
+        of trip records from the city’s open data portal. To ensure reliability and reproducibility, I implemented an automated process to 
+        fetch and store monthly data in an efficient Parquet format, providing a consistent foundation for downstream analysis.
+    <p style="text-align: justify;">
+        Once the data was ingested, I carried out an exploratory analysis to assess quality, engineer meaningful features, and uncover patterns 
+        that could influence trip duration. This involved creating variables such as trip distance, time of day, day of week, and weekend 
+        indicators, alongside parsing timestamps for temporal insights.
+    </p>
+    <p style="text-align: justify;">
+        A preliminary RandomForest model was used to gauge feature importance, revealing key drivers like distance and location attributes. 
+        Visual analysis highlighted trends in trip durations across weekdays, differences between trips with complete and missing location 
+        data, and the relative influence of various predictors. By the end of this phase, the dataset was clean, enriched, and well-understood, 
+        providing a strong analytical foundation for model development in the subsequent stages of the MLOps pipeline.
+    </p>
+
+

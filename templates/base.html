@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Dario's Portfolio{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <!-- ✅ Reusable Top Navbar -->
+    <nav class="topnav">
+        <a href="/">Home</a>
+        <a href="/#about">About</a>
+        <a href="/#projects">Projects</a>
+        <a href="/#certificates">Certificates</a>
+        <a href="/#activities">Activities</a>
+        <a href="https://github.com/DarioDang" target="_blank">GitHub</a>
+        <a href="https://www.linkedin.com/in/dario-dang-89049020a/" target="_blank">LinkedIn</a>
+        <a href="/static/files/Dario_CV.pdf" download>MyCV</a>
+    </nav>
+
+    <!-- ✅ Page Content -->
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- ✅ Slideshow Script (now runs AFTER content loads) -->
+    <script>
+    let current = 0; 
+    let slides = [];
+    let dots = [];
+    let slideInterval;
+    let isPaused = false;
+    let isAnimating = false;
+        
+    document.addEventListener("DOMContentLoaded", () => {
+        slides = Array.from(document.getElementsByClassName("mySlides"));
+        dots   = Array.from(document.getElementsByClassName("dot")); // optional
+
+        if (!slides.length) return;
+    
+    // Ensure exactly one slide is current at start
+        slides.forEach(s => s.classList.remove(
+            'is-current','is-entering',
+            'slide-enter-from-right','slide-exit-to-left',
+            'slide-enter-from-left','slide-exit-to-right'
+        ));
+
+        current = 0;
+        slides[0].classList.add('is-current');
+        if (dots[0]) dots[0].classList.add('active');
+        startAutoSlide();
+    });
+
+    function showSlides(direction = 1) {
+        if (!slides.length || isAnimating) return;
+        isAnimating = true;
+
+        const prev = current;
+        current = (current + direction + slides.length) % slides.length;
+        const incoming = slides[current];
+        const outgoing = slides[prev];
+
+        // Reset classes
+        incoming.classList.remove('slide-enter-from-right','slide-enter-from-left','is-current');
+        outgoing.classList.remove('slide-exit-to-left','slide-exit-to-right');
+
+        // Prepare z-order and visibility
+        incoming.classList.add('is-entering');  // on top and visible
+        outgoing.classList.add('is-current');   // ensure it’s visible under the incoming
+
+        // Directional animations
+        if (direction === 1) {
+            incoming.classList.add('slide-enter-from-right');
+            outgoing.classList.add('slide-exit-to-left');
+        } else {
+            incoming.classList.add('slide-enter-from-left');
+            outgoing.classList.add('slide-exit-to-right');
+        }
+
+        // Dots (optional)
+        if (dots[prev]) dots[prev].classList.remove('active');
+        if (dots[current]) dots[current].classList.add('active');
+
+        // When outgoing animation finishes, finalize state
+        const onOutEnd = () => {
+            outgoing.classList.remove('is-current','slide-exit-to-left','slide-exit-to-right');
+            incoming.classList.remove('is-entering','slide-enter-from-right','slide-enter-from-left');
+            incoming.classList.add('is-current'); // settle new current
+            outgoing.removeEventListener('animationend', onOutEnd);
+            isAnimating = false;
+        };
+        outgoing.addEventListener('animationend', onOutEnd);
+    }
+        
+    function plusSlides(n) {
+        stopAutoSlide();
+        showSlides(n);
+        startAutoSlide();
+    }
+        
+    function currentSlide(n1Based) {
+        stopAutoSlide();
+        const target = (n1Based - 1 + slides.length) % slides.length;
+        const direction = target >= current
+            ? (target === current ? 0 : 1)
+            : -1;
+        if (direction !== 0) showSlides(direction);
+        startAutoSlide();
+    }
+        
+    function startAutoSlide() {
+        stopAutoSlide();
+        slideInterval = setInterval(() => {
+            if (!isPaused) showSlides(1);
+        }, 7000);
+    }
+
+    function stopAutoSlide() { if (slideInterval) clearInterval(slideInterval); }
+    function pauseAutoSlide()  { isPaused = true;  }
+    function resumeAutoSlide() { isPaused = false; }
+    </script>
+
+    <!-- ✅ About Me Fade-in Animation Script -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const fadeElements = document.querySelectorAll('.fade-in-up');
+        
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('show');
+                } else {
+                    entry.target.classList.remove('show'); // 👈 allows animation to replay
+                }
+            });
+        }, {
+            threshold: 0.2
+        });
+        
+        fadeElements.forEach(el => observer.observe(el));
+    });
+    </script>
+    <!-- ✅ Course & Certificate Section -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const track = document.querySelector('.carousel-track');
+            const cards = document.querySelectorAll('.certificate-card');
+            const cardsPerGroup = 4;
+            const totalGroups = Math.ceil(cards.length / cardsPerGroup);
+            let currentSlide = 0;
+        
+            // Clone first group and append to the end
+            const firstGroup = Array.from(cards).slice(0, cardsPerGroup);
+            firstGroup.forEach(card => {
+                const clone = card.cloneNode(true);
+                track.appendChild(clone);
+            });
+        
+            const allSlides = Math.ceil(track.children.length / cardsPerGroup);
+        
+            function slideCertificates() {
+                currentSlide++;
+                const offset = currentSlide * -100;
+                track.style.transition = "transform 0.5s ease";
+                track.style.transform = `translateX(${offset}%)`;
+        
+                // When reaching the cloned group, reset to original
+                if (currentSlide === allSlides - 1) {
+                    setTimeout(() => {
+                        track.style.transition = "none"; // Remove animation
+                        track.style.transform = `translateX(0%)`;
+                        currentSlide = 0;
+                    }, 500); // Match transition duration
+                }
+            }
+        
+            setInterval(slideCertificates, 5000); // every 5 seconds
+        });
+    </script>
+    <!-- ✅ Project Card Scroll Animation -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const projectCards = document.querySelectorAll('.project-card');
+
+            const observer = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    } else {
+                        entry.target.classList.remove('visible');
+                    }
+                });
+            }, {
+                threshold: 0.2
+            });
+
+            projectCards.forEach(card => observer.observe(card));
+        });
+    </script>       
+</body>
+</html>
