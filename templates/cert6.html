@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Master of Applied Data Science Certificate</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: center;
+        }
+
+        .certificate-container {
+            background-color: #fff;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .certificate-container img.logo {
+            max-width: 180px;
+            margin-bottom: 25px;
+        }
+
+        .certificate-container img.certificate {
+            width: 100%;
+            max-width: 650px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #ccc;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        p {
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #2c3e50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-button:hover {
+            background-color: #1a252f;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <!-- University Logo -->
+        <img src="{{ url_for('static', filename='image/certificate_section/UWE_Logo.png') }}" 
+             alt="Show University Logo" class="logo">
+
+        <!-- Certificate Image -->
+        <img src="{{ url_for('static', filename='image/certificate_section/Master_Degree.jpg') }}" 
+             alt="Bachelor of Business Management | Marketing" class="certificate">
+
+        <!-- Title and Description -->
+        <h1>Bachelor of Business Management with Marketing</h1>
+        <p style="text-align:justify;">
+            This certificate acknowledges the successful completion of the Bachelor of Business Management with Marketing program
+            at the University of the West of England. The coursework combined core business disciplines with specialised marketing
+            knowledge, covering topics such as consumer behaviour, brand strategy, digital marketing, and global business management.
+        </p>
+        <p style="text-align:justify;">
+            Through real-world projects, internships, and industry engagement, the program emphasized practical application of
+            business and marketing strategies. Graduates are equipped with the skills and insights needed to develop creative
+            marketing solutions, manage business operations effectively, and contribute to organizational growth in a competitive,
+            global marketplace.
+        </p>
+
+        <!-- Back Link -->
+        <a href="/#certificates" class="back-button">← Back to Certificates</a>
+    </div>
+</body>
+</html>
