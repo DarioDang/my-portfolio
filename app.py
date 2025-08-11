@@ -1,6 +1,16 @@
+import os
 from flask import Flask, render_template
 
 app = Flask(__name__)
+
+# ✅ Google Analytics config
+# Read Measurement ID from environment variable (set on Render or locally)
+app.config['GA_MEASUREMENT_ID'] = os.environ.get('GA_MEASUREMENT_ID', '')
+
+# Make GA_MEASUREMENT_ID available to all templates
+@app.context_processor
+def inject_ga_id():
+    return {'GA_MEASUREMENT_ID': app.config['GA_MEASUREMENT_ID']}
 
 @app.route('/')
 def home():
